@@ -36,6 +36,22 @@
 //!
 //! The core of the dynamically-typed half is the [`DynamicColor`] type, which encodes the color space
 //! and state as data stored in the type at runtime. It stores these as [`DynamicColorSpace`]s and [`DynamicState`]s.
+//!
+//! # Example
+//!
+//! ```rust
+//! let original_color = Color::<EncodedSrgb, Display>::new(0.5, 0.5, 0.5);
+//! let col: Color<LinearSrgb, Display> = orig.convert();
+//! let col: Color<AcesCg, Display> = col.convert_linear();
+//! let col: Color<AcesCg, Scene> = col.convert_state(|c| c * 5.0);
+//!
+//! let col: Color<AcesCg, Display> = col.convert_state(|c| c / 5.0);
+//! let col: Color<LinearSrgb, Display> = col.convert();
+//! let final_color: Color<EncodedSrgb, Display> = col.convert();
+//!
+//! assert_eq!(orignal_color, final_color);
+//! ```
+
 
 pub use kolor;
 pub use kolor::ColorSpace as DynamicColorSpace;
@@ -218,7 +234,7 @@ impl<Spc: LinearColorSpace, SrcSt> Color<Spc, SrcSt> {
 }
 
 impl<Spc: LinearColorSpace> Color<Spc, Scene> {
-    /// Tonemap `self` using the [`Tonemapper`] `tonemapper`, converting `self` from being
+    /// Tonemap `self` using the `tonemapper`, converting `self` from being
     /// scene-referred to being display-referred.
     pub fn tonemap(self, tonemapper: impl Tonemapper) -> Color<Spc, Display> {
         Color::from(tonemapper.tonemap_raw(self.raw))

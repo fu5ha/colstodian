@@ -6,7 +6,7 @@ pub trait Tonemapper {
     fn tonemap_raw(&self, color: Vec3) -> Vec3;
 }
 
-/// Parameters for the [`Tonemapper`]
+/// Parameters for the [`LottesTonemapper`]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct LottesTonemaperParams {
     /// Controls the strength of the toe and shoulder rolloff
@@ -55,6 +55,7 @@ pub struct LottesTonemapper {
 }
 
 impl LottesTonemapper {
+    /// Create a new [`LottesTonemapper`] with the given parameters.
     pub fn new(params: LottesTonemaperParams) -> Self {
         let LottesTonemaperParams {
             contrast,
