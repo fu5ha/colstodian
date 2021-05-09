@@ -48,7 +48,7 @@ macro_rules! impl_color_space {
 
 /// A bag of components with names r, g, b. Some `Color`s with RGB color spaces
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
-pub struct RGB {
+pub struct Rgb {
     pub r: f32,
     pub g: f32,
     pub b: f32,
@@ -67,7 +67,7 @@ pub struct LinearSrgb;
 
 impl_color_space! {
     LinearSrgb is LINEAR_SRGB,
-    Derefs as RGB,
+    Derefs as Rgb,
     Conversion to AcesCg = BT_709_D65_TO_AP0_D60,
     Conversion to Bt2020 = BT_709_D65_TO_BT_2020_D65
 }
@@ -77,7 +77,7 @@ pub struct EncodedSrgb;
 
 impl_color_space! {
     EncodedSrgb is SRGB,
-    Derefs as RGB,
+    Derefs as Rgb,
 }
 
 /// A type representing the BT.2020 color space.
@@ -85,7 +85,7 @@ pub struct Bt2020;
 
 impl_color_space! {
     Bt2020 is BT_2020,
-    Derefs as RGB,
+    Derefs as Rgb,
     Conversion to LinearSrgb = BT_2020_D65_TO_BT_709_D65,
     Conversion to AcesCg = BT_2020_D65_TO_AP0_D60
 }
@@ -111,7 +111,7 @@ pub struct AcesCg;
 
 impl_color_space! {
     AcesCg is ACES_CG,
-    Derefs as RGB,
+    Derefs as Rgb,
     Conversion to LinearSrgb = AP0_D60_TO_BT_709_D65,
     Conversion to Bt2020 = AP0_D60_TO_BT_2020_D65
 }

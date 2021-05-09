@@ -321,7 +321,7 @@ impl DynamicColor {
     /// Ensure that `self` has a valid combination of color space and state.
     pub fn validate(self) -> Result<Self> {
         if self.state == DynamicState::Scene && !self.space.is_linear() {
-            Err(Error::NonlinearSpaceAndSceneState.into())
+            Err(Error::NonlinearSpaceAndSceneState)
         } else {
             Ok(self)
         }
