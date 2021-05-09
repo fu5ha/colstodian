@@ -4,6 +4,10 @@ version = "0.1.0-alpha.0"
 authors = ["Gray Olson <gray@grayolson.com>"]
 license = "MIT OR Apache-2.0 OR Zlib"
 edition = "2018"
+description = "An opinionated, practical color management library for games and graphics."
+documentation = "https://docs.rs/colstodian"
+homepage = "https://github.com/termhn/colstodian"
+repository = "https://github.com/termhn/colstodian"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/state/manifest.html
 
