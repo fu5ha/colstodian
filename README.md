@@ -1,7 +1,7 @@
 # `colstodian`
 
-[![crates.io](http://meritbadge.herokuapp.com/ultraviolet)](https://crates.io/crates/ultraviolet)
-[![docs.rs](https://docs.rs/ultraviolet/badge.svg)](https://docs.rs/ultraviolet)
+[![crates.io](http://meritbadge.herokuapp.com/colstodian)](https://crates.io/crates/colstodian)
+[![docs.rs](https://docs.rs/colstodian/badge.svg)](https://docs.rs/colstodian)
 
 An opinionated color management library built on top of [`kolor`](https://docs.rs/kolor).
 
