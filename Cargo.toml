@@ -16,6 +16,7 @@ kolor = { version = "0.1", default-features = false, features = ["f32", "color-m
 thiserror = "1.0"
 derivative = "2.2"
 serde = { version = "1", optional = true, features = ["derive"] }
+bytemuck = { version = "1.5.1", optional = true, features = ["derive"] }
 
 [features]
 default = ["with-serde", "std"]
