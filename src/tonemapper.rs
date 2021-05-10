@@ -44,7 +44,7 @@ impl Default for LottesTonemaperParams {
 
 /// See this talk by Timothy Lottes https://gpuopen.com/wp-content/uploads/2016/03/GdcVdrLottes.pdf and associated slides
 /// https://gpuopen.com/wp-content/uploads/2016/03/GdcVdrLottes.pdf
-#[cfg_attr(feature = "bytemuck", repr(C))]
+#[repr(C)]
 #[cfg_attr(feature = "bytemuck", derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable))]
 pub struct LottesTonemapper {
     a: f32,
