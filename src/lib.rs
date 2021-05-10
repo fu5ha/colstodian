@@ -52,7 +52,6 @@
 //! assert_eq!(orignal_color, final_color);
 //! ```
 
-
 pub use kolor;
 pub use kolor::ColorSpace as DynamicColorSpace;
 pub use kolor::Mat3;
