@@ -42,11 +42,14 @@
 //! Let's say we have a color that we got from an asset loaded from a color image or a color picker,
 //! which are often in the encoded sRGB color space.
 //! ```rust
-//! let loaded_asset_color = Color::srgb(0.5, 0.5, 0.5);
+//! # use colstodian::*;
+//! let loaded_asset_color = color::srgb(0.5, 0.5, 0.5);
 //! ```
 //!
 //! But wait, we can't do much with this color yet...
-//! ```rust
+//! ```
+//! # use colstodian::*;
+//! # let loaded_asset_color = color::linear_srgb::<Display>(0.5, 0.5, 0.5);
 //! let my_other_color = loaded_asset_color * 5.0; // oops, compile error!
 //! ```
 //!
@@ -56,7 +59,9 @@
 //! In the same way, before we can do math on this color, we need to convert it to a linear color space.
 //! In this case, the best way to do that is by decoding it to Linear sRGB.
 //! ```rust
-//! let decoded = orig.decode::<LinearSrgb>();
+//! # use colstodian::*;
+//! # let loaded_asset_color = color::srgb(0.5, 0.5, 0.5);
+//! let decoded = loaded_asset_color.decode::<LinearSrgb>();
 //!
 //! let my_other_color = decoded * 5.0; // yay, it works!
 //! ```
@@ -64,19 +69,24 @@
 //! Also note that you can break out of the restrictions imposed by the type system
 //! or otherwise get the raw color by accessing `color.raw`:
 //! ```rust
-//! loaded_asset_color.raw *= 5.0; // This works... well, if it was declared as mut, it would.
+//! # use colstodian::*;
+//! let mut loaded_asset_color = color::srgb(0.5, 0.5, 0.5);
+//! loaded_asset_color.raw *= 5.0; // This works!
 //! ```
 //!
 //! You can also access the components of a color by that component's name, for example
 //! a linear sRGB color has components `r`, `g`, and `b`, so you can do:
 //! ```rust
+//! # use colstodian::*;
+//! # let decoded = color::linear_srgb::<Display>(0.5, 0.5, 0.5);
 //! let red_component = decoded.r;
 //! ```
 //!
 //! However, if a color is in a different color space, for example [`ICtCpPQ`], which has different
 //! component names, then you would access those components accordingly:
 //! ```rust
-//! let col: <ICtCpPq, Display> = Color::new(1.0, 0.2, 0.2);
+//! # use colstodian::*;
+//! let col: Color<ICtCpPQ, Display> = Color::new(1.0, 0.2, 0.2);
 //!
 //! let intensity = col.i; // acces I component through .i
 //! let ct = col.ct; // access Ct component through .ct
@@ -92,6 +102,8 @@
 //! Since both color spaces are linear, we can convert it using convert_linear, which compiles
 //! down to a simple 3x3 matrix * 3 component vector multiplication.
 //! ```rust
+//! # use colstodian::*;
+//! # let decoded = color::linear_srgb::<Display>(0.5, 0.5, 0.5);
 //! let col: Color<AcesCg, Display> = decoded.convert_linear();
 //! ```
 //!
@@ -107,6 +119,8 @@
 //! color we stored in the texture by some *power* value stored elsewhere, so that we can change its intensity
 //! like any other light in the scene.
 //! ```rust
+//! # use colstodian::*;
+//! # let col = color::acescg::<Display>(0.5, 0.5, 0.5);
 //! let power = 5.0; // Say you loaded this from an asset somewhere
 //! let emissive_col: Color<AcesCg, Scene> = col.convert_state(|c| c * power);
 //! ```
@@ -120,7 +134,8 @@
 //! Okay, so now we've ended up with a final color for a pixel, which is still a scene-referred color in the
 //! ACEScg color space.
 //! ```rust
-//! let rendered_col: Color<AcesCg, Scene> = blah; // let's just say this is the computed final color.
+//! # use colstodian::*;
+//! let rendered_col = color::acescg::<Scene>(5.0, 4.0, 4.5); // let's just say this is the computed final color.
 //! ```
 //!
 //! Now we need to do the opposite of what we did before, mapping the infinite dynamic range of a
@@ -130,8 +145,10 @@
 //! which is a tonemapper inspired by [a talk given by AMD's Timothy Lottes](https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day).
 //! See the documentation for more information on why it is a good choice.
 //! ```rust
+//! # use colstodian::*;
+//! # let rendered_col = color::acescg::<Scene>(5.0, 4.0, 4.5);
 //! let tonemapper = LottesTonemapper::new(Default::default()); // In reality you would customize the parameters here
-//! let tonemapped: Color<AcesCg, Display> = col.tonemap(tonemapper);
+//! let tonemapped: Color<AcesCg, Display> = rendered_col.tonemap(tonemapper);
 //! ```
 //!
 //! Now our color is display-referred within a finite (`[0..1]`) dynamic range, however we haven't chosen
@@ -140,14 +157,18 @@
 //! linear sRGB and then encode it to sRGB, ready to send directly to the monitor, or to save to a file
 //! and be displayed on the web.
 //! ```rust
+//! # use colstodian::*;
+//! # let tonemapped = color::acescg::<Display>(5.0, 4.0, 4.5);
 //! let lin_srgb: Color<LinearSrgb, Display> = tonemapped.convert_linear(); // Display-referred to an sRGB display
-//! let encoded = col.encode::<EncodedSrgb>(); // Encode with sRGB OETF, ready to save to image/send to monitor
+//! let encoded = lin_srgb.encode::<EncodedSrgb>(); // Encode with sRGB OETF, ready to save to image/send to monitor
 //! ```
 //!
 //! Alternatively, we could output to a different display, for example to a wide-gamut but still LDR
 //! BT.2020 calibrated display:
 //! ```rust
-//! let lin_bt2020: <Bt2020, Display> = tonemapped.convert_linear();
+//! # use colstodian::*;
+//! # let tonemapped = color::acescg::<Display>(5.0, 4.0, 4.5);
+//! let lin_bt2020: Color<Bt2020, Display> = tonemapped.convert_linear();
 //! let encoded = lin_bt2020.encode::<EncodedBt2020>();
 //! ```
 //!
@@ -208,6 +229,41 @@ pub use error::*;
 mod tests {
     use super::*;
 
+    trait EqualsEps {
+        fn eq_eps(self, other: Self, eps: f32) -> bool;
+    }
+
+    impl EqualsEps for f32 {
+        fn eq_eps(self, other: f32, eps: f32) -> bool {
+            (self - other).abs() <= eps
+        }
+    }
+
+    impl<Spc, St> EqualsEps for Color<Spc, St> {
+        fn eq_eps(self, other: Color<Spc, St>, eps: f32) -> bool {
+            self.raw.x.eq_eps(other.raw.x, eps)
+                && self.raw.y.eq_eps(other.raw.y, eps)
+                && self.raw.z.eq_eps(other.raw.z, eps)
+        }
+    }
+
+    macro_rules! assert_eq_eps {
+        ($left:expr, $right:expr, $eps:expr) => ({
+            match (&($left), &($right)) {
+                (left_val, right_val) => {
+                    if !(left_val.eq_eps(*right_val, $eps)) {
+                        // The reborrows below are intentional. Without them, the stack slot for the
+                        // borrow is initialized even before the values are compared, leading to a
+                        // noticeable slow down.
+                        panic!(r#"assertion failed: `(left ~= right with error {})`
+    left: `{:?}`,
+    right: `{:?}`"#, $eps, &*left_val, &*right_val)
+                    }
+                }
+            }
+        });
+    }
+
     #[test]
     fn round_trip() {
         let orig = Color::<EncodedSrgb, Display>::new(0.5, 0.5, 0.5);
@@ -219,6 +275,6 @@ mod tests {
         let col: Color<LinearSrgb, Display> = col.convert_linear();
         let fin: Color<EncodedSrgb, Display> = col.encode();
 
-        assert_eq!(orig, fin);
+        assert_eq_eps!(orig, fin, 0.0001);
     }
 }

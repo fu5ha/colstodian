@@ -21,24 +21,6 @@ impl<Spc, St> Color<Spc, St> {
         Self::from(Vec3::new(el1, el2, el3))
     }
 
-    /// Creates a [`Color`] in the [`EncodedSrgb`] color space with components `r`, `g`, and `b`.
-    #[inline]
-    pub fn srgb(r: f32, g: f32, b: f32) -> Color<EncodedSrgb, Display> {
-        Color::new(r, g, b)
-    }
-
-    /// Creates a [`Color`] in the [`LinearSrgb`] color space in the `St1` [State] with components `r`, `g`, and `b`.
-    #[inline]
-    pub fn linear_srgb<St1: State>(r: f32, g: f32, b: f32) -> Color<EncodedSrgb, St1> {
-        Color::new(r, g, b)
-    }
-
-    /// Creates a [`Color`] in the [`AcesCg`] color space in the `St1` [State] with components `r`, `g`, and `b`.
-    #[inline]
-    pub fn acescg<St1: State>(r: f32, g: f32, b: f32) -> Color<AcesCg, St1> {
-        Color::new(r, g, b)
-    }
-
     /// Creates a [`Color`] with raw values contained in `raw`.
     #[inline]
     pub const fn from(raw: Vec3) -> Self {
@@ -63,6 +45,24 @@ impl<Spc, St> Color<Spc, St> {
     pub fn min_element(self) -> f32 {
         self.raw.min_element()
     }
+}
+
+/// Creates a [`Color`] in the [`EncodedSrgb`] color space with components `r`, `g`, and `b`.
+#[inline]
+pub fn srgb(r: f32, g: f32, b: f32) -> Color<EncodedSrgb, Display> {
+    Color::new(r, g, b)
+}
+
+/// Creates a [`Color`] in the [`LinearSrgb`] color space in the `St` [State] with components `r`, `g`, and `b`.
+#[inline]
+pub fn linear_srgb<St: State>(r: f32, g: f32, b: f32) -> Color<LinearSrgb, St> {
+    Color::new(r, g, b)
+}
+
+/// Creates a [`Color`] in the [`AcesCg`] color space in the `St` [State] with components `r`, `g`, and `b`.
+#[inline]
+pub fn acescg<St: State>(r: f32, g: f32, b: f32) -> Color<AcesCg, St> {
+    Color::new(r, g, b)
 }
 
 macro_rules! impl_op_color {
