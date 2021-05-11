@@ -248,20 +248,23 @@ mod tests {
     }
 
     macro_rules! assert_eq_eps {
-        ($left:expr, $right:expr, $eps:expr) => ({
+        ($left:expr, $right:expr, $eps:expr) => {{
             match (&($left), &($right)) {
                 (left_val, right_val) => {
                     if !(left_val.eq_eps(*right_val, $eps)) {
                         // The reborrows below are intentional. Without them, the stack slot for the
                         // borrow is initialized even before the values are compared, leading to a
                         // noticeable slow down.
-                        panic!(r#"assertion failed: `(left ~= right with error {})`
+                        panic!(
+                            r#"assertion failed: `(left ~= right with error {})`
     left: `{:?}`,
-    right: `{:?}`"#, $eps, &*left_val, &*right_val)
+    right: `{:?}`"#,
+                            $eps, &*left_val, &*right_val
+                        )
                     }
                 }
             }
-        });
+        }};
     }
 
     #[test]
