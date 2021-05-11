@@ -42,8 +42,8 @@ impl Default for LottesTonemaperParams {
     }
 }
 
-/// See this talk by Timothy Lottes https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day and associated slides
-/// https://gpuopen.com/wp-content/uploads/2016/03/GdcVdrLottes.pdf
+/// See this talk by Timothy Lottes <https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day>
+///and associated slides <https://gpuopen.com/wp-content/uploads/2016/03/GdcVdrLottes.pdf>
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]

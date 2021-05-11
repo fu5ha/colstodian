@@ -14,7 +14,7 @@
 //!
 //! ## Required Reading
 //!
-//! * http://github.com/jeremyselan/cinematiccolor/raw/master/ves/Cinematic_Color_VES.pdf
+//! * <http://github.com/jeremyselan/cinematiccolor/raw/master/ves/Cinematic_Color_VES.pdf>
 //!
 //! # Overview
 //!
@@ -127,7 +127,7 @@
 //!
 //! Now we can do the actual rendering math, using this scene-referred color value.
 //!
-//! ```rust
+//! ```text
 //! // ... rendering math here ...
 //! ```
 //!
@@ -178,10 +178,10 @@
 //!
 //! Here is a curated list of further resources to check out for information about color encoding and management.
 //!
-//! * The Hitchhiker's Guide to Digital Color: https://hg2dc.com/
-//! * Alex Fry (DICE/Frostbite) on HDR color management in Frostbite: https://www.youtube.com/watch?v=7z_EIjNG0pQ
-//! * Timothy Lottes (AMD) on "variable" dynamic range color management: https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day
-//! * Hajime Uchimura and Kentaro Suzuki on HDR and Wide color strategies in Gran Turismo SPORT: https://www.polyphony.co.jp/publications/sa2018/
+//! * The Hitchhiker's Guide to Digital Color: <https://hg2dc.com/>
+//! * Alex Fry (DICE/Frostbite) on HDR color management in Frostbite: <https://www.youtube.com/watch?v=7z_EIjNG0pQ>
+//! * Timothy Lottes (AMD) on "variable" dynamic range color management: <https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day>
+//! * Hajime Uchimura and Kentaro Suzuki on HDR and Wide color strategies in Gran Turismo SPORT: <https://www.polyphony.co.jp/publications/sa2018/>
 
 pub use kolor;
 pub use kolor::Mat3;

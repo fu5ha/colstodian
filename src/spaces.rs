@@ -2,9 +2,10 @@ use super::*;
 
 pub use kolor::ColorSpace as DynamicColorSpace;
 
-pub use dynamic_spaces::*;
 /// Color spaces defined as data.
 pub use kolor::spaces as dynamic_spaces;
+
+pub use static_spaces::*;
 
 /// Color spaces defined as types.
 pub mod static_spaces {
@@ -79,7 +80,7 @@ pub mod static_spaces {
 
     use crate::component_structs::*;
 
-    /// A type representing the linear (wihout OETF applied) sRGB color space.
+    /// A type representing the [linear sRGB][dynamic_spaces::LINEAR_SRGB] color space.
     pub struct LinearSrgb;
 
     impl_color_space! {
@@ -89,7 +90,7 @@ pub mod static_spaces {
         Conversion to Bt2020 = BT_709_D65_TO_BT_2020_D65
     }
 
-    /// A type representing the encoded (with OETF applied) sRGB colorspace.
+    /// A type representing the [encoded sRGB][dynamic_spaces::ENCODED_SRGB] colorspace.
     pub struct EncodedSrgb;
 
     impl_color_space! {
@@ -98,9 +99,8 @@ pub mod static_spaces {
         Decodes to LinearSrgb via sRGB_eotf, Encoded via sRGB_oetf
     }
 
-    /// A type representing the BT.2020 color space (equivalent to the unencoded BT.2100 color space).
-    ///
-    /// See [BT_2020][dynamic_spaces::BT_2020] for more.
+    /// A type representing the [BT.2020][dynamic_spaces::BT_2020] color space
+    /// (equivalent to the linear BT.2100 color space).
     pub struct Bt2020;
 
     impl_color_space! {
@@ -121,9 +121,9 @@ pub mod static_spaces {
     }
 
     /// A type representing the BT.2100 color space (equivalent to the unencoded [BT.2020][Bt2020] color space).
-    pub struct Bt2100;
+    pub type Bt2100 = Bt2020;
 
-    /// A type representing the encoded BT.2100 color space (with inverse PQ EOTF applied).
+    /// A type representing the encoded [BT.2100][Bt2100] color space (with inverse PQ EOTF applied).
     pub struct EncodedBt2100PQ;
 
     impl_color_space! {
@@ -132,7 +132,7 @@ pub mod static_spaces {
         Decodes to Bt2020 via ST_2084_PQ_eotf, Encoded via ST_2084_PQ_eotf_inverse
     }
 
-    /// A type representing the ICtCp color space with PQ (Perceptual Quantizer) transfer functions.
+    /// A type representing the [ICtCp][dynamic_spaces::ICtCp_PQ] color space with PQ (Perceptual Quantizer) transfer functions.
     pub struct ICtCpPQ;
 
     impl_color_space! {
@@ -140,7 +140,7 @@ pub mod static_spaces {
         Derefs as ICtCp,
     }
 
-    /// A type representing the ACEScg color space.
+    /// A type representing the [ACEScg][dynamic_spaces::ACES_CG] color space.
     pub struct AcesCg;
 
     impl_color_space! {
@@ -151,7 +151,7 @@ pub mod static_spaces {
         Conversion to DisplayP3 = AP0_D60_TO_P3_D65
     }
 
-    /// A type representing the Apple Display P3 color space.
+    /// A type representing the Apple [Display P3][dynamic_spaces::DISPLAY_P3] color space.
     pub struct DisplayP3;
 
     impl_color_space! {
@@ -171,5 +171,3 @@ pub mod static_spaces {
         Decodes to DisplayP3 via sRGB_eotf, Encoded via sRGB_oetf
     }
 }
-
-pub use static_spaces::*;

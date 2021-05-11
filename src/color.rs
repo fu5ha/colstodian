@@ -202,6 +202,7 @@ impl<Spc: ColorSpace, St: State> From<Color<Spc, St>> for kolor::Color {
 
 /// A dynamic color, with its Space and State defined
 /// as data. This is mostly useful for (de)serialization.
+///
 /// See [`ColorSpace`] and [`State`] for more.
 #[derive(Copy, Clone, PartialEq, Debug)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
