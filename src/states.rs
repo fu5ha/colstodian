@@ -16,3 +16,13 @@ pub struct Display;
 impl State for Display {
     const STATE: DynamicState = DynamicState::Display;
 }
+
+/// A dynamic version of a color's state. See docs for [`State`]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+pub enum DynamicState {
+    /// See docs for [`Scene`]
+    Scene,
+    /// See docs for [`Display`]
+    Display,
+}
