@@ -2,9 +2,9 @@ use super::*;
 
 pub use kolor::ColorSpace as DynamicColorSpace;
 
+pub use dynamic_spaces::*;
 /// Color spaces defined as data.
 pub use kolor::spaces as dynamic_spaces;
-pub use dynamic_spaces::*;
 
 macro_rules! impl_color_space {
     {
@@ -163,6 +163,14 @@ pub struct Oklab;
 impl_color_space! {
     Oklab is OKLAB,
     Derefs as Lab,
+}
+
+/// A type representing the [Oklch][dynamic_spaces::OKLCH] color space.
+pub struct Oklch;
+
+impl_color_space! {
+    Oklch is OKLCH,
+    Derefs as LCh,
 }
 
 /// A type representing the [ACEScg][dynamic_spaces::ACES_CG] color space.
