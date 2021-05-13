@@ -184,8 +184,8 @@
 //! * Hajime Uchimura and Kentaro Suzuki on HDR and Wide color strategies in Gran Turismo SPORT: <https://www.polyphony.co.jp/publications/sa2018/>
 
 pub use kolor;
-pub use kolor::Mat3;
-pub use kolor::Vec3;
+pub use glam;
+pub(crate) use glam::{Vec3, Vec4, Mat3};
 
 use std::{marker::PhantomData, ops::*};
 
@@ -206,6 +206,10 @@ pub use spaces::*;
 pub mod states;
 pub use states::*;
 
+/// Contains types relating to a color's alpha state.
+pub mod alpha_states;
+pub use alpha_states::*;
+
 /// Contains tonemappers, useful for mapping scene-referred HDR values into display-referred values
 /// within the concrete dynamic range of a specific display.
 pub mod tonemapper;
@@ -217,7 +221,11 @@ pub mod component_structs;
 pub mod color;
 pub use color::*;
 
-/// The traits which form the backbone of the strongly-typed [`Color`].
+/// Contains the [`ColorAlpha`] and [`DynamicColorAlpha`] types.
+pub mod color_alpha;
+pub use color_alpha::*;
+
+/// The traits which form the backbone of the strongly-typed [`Color`]/[`ColorAlpha`].
 pub mod traits;
 pub use traits::*;
 

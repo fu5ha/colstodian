@@ -34,6 +34,10 @@ pub trait EncodeFrom<SrcSpace> {
     fn encode_raw(color: Vec3) -> Vec3;
 }
 
+/// A type that implements this trait can be converted directly to and from
+/// an appropriately sized array of `u8`s.
+pub trait AsU8Array {}
+
 /// A type that implements this trait represents a color's State.
 ///
 /// All colors have units. Sometimes a color's units are explicit, such as measuring the emitted
@@ -56,4 +60,12 @@ pub trait EncodeFrom<SrcSpace> {
 /// devices (scenes) are [`Scene`]-referred.
 pub trait State {
     const STATE: DynamicState;
+}
+
+/// A type that implements this trait represents a color's alpha state.
+///
+/// A color can either have a [`Separate`] alpha channel or have been pre-multiplied
+/// with its alpha channel and so have [`Premultiplied`] alpha.
+pub trait AlphaState {
+    const STATE: DynamicAlphaState;
 }

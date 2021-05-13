@@ -2,13 +2,23 @@ use super::*;
 
 pub use kolor::ColorSpace as DynamicColorSpace;
 
-pub use dynamic_spaces::*;
 /// Color spaces defined as data.
-pub use kolor::spaces as dynamic_spaces;
+pub mod dynamic_spaces {
+    use super::*;
+    use kolor::details::color::*;
+
+    pub use kolor::spaces::*;
+
+    pub const ENCODED_ACES_CG_SRGB: DynamicColorSpace = DynamicColorSpace::new(
+        RGBPrimaries::AP1,
+        WhitePoint::D60,
+        TransformFn::sRGB,
+    );
+}
 
 macro_rules! impl_color_space {
     {
-        $space:ident is $kolor_space:ident,
+        $space:ident is $dynamic_space:ident,
         Derefs as $derefs_to:ident,
     } => {
         impl<St> Deref for Color<$space, St> {
@@ -30,16 +40,16 @@ macro_rules! impl_color_space {
 
         impl ColorSpace for $space {
             /// The [`DynamicColorSpace`] that this type represents.
-            const SPACE: DynamicColorSpace = kolor::spaces::$kolor_space;
+            const SPACE: DynamicColorSpace = dynamic_spaces::$dynamic_space;
         }
     };
     {
-        $space:ident is $kolor_space:ident,
+        $space:ident is $dynamic_space:ident,
         Derefs as $derefs_to:ident,
         Decodes to $decoded:ident via $decode_fn:ident, Encoded via $encode_fn:ident
     } => {
         impl_color_space! {
-            $space is $kolor_space,
+            $space is $dynamic_space,
             Derefs as $derefs_to,
         }
 
@@ -60,12 +70,12 @@ macro_rules! impl_color_space {
         }
     };
     {
-        $space:ident is $kolor_space:ident and Linear,
+        $space:ident is $dynamic_space:ident and Linear,
         Derefs as $derefs_to:ident,
         $(Conversion to $dst_space:ident = $mat:ident),*
     } => {
         impl_color_space! {
-            $space is $kolor_space,
+            $space is $dynamic_space,
             Derefs as $derefs_to,
         }
 
@@ -100,6 +110,8 @@ impl_color_space! {
     Derefs as Rgb,
     Decodes to LinearSrgb via sRGB_eotf, Encoded via sRGB_oetf
 }
+
+impl AsU8Array for EncodedSrgb {}
 
 /// A type representing the reference [XYZ][dynamic_spaces::CIE_XYZ] color space.
 pub struct CieXyz;
@@ -185,6 +197,22 @@ impl_color_space! {
     Conversion to Aces2065 = AP1_D60_TO_AP0_D60,
     Conversion to DisplayP3 = AP1_D60_TO_P3_D65
 }
+
+/// A type representing the [ACEScg color space encoded with the sRGB transfer functions][dynamic_spaces::ENCODED_ACESCG_SRGB].
+///
+/// This is useful to take advantage of many GPUs' hardware support for encoding and decoding using the
+/// sRGB transfer functions. Using the sRGB transfer functions to encode ACEScg data is useful when trying to
+/// use 8-bit texture formats. The OETF "compresses" the data to give better bit distribution based on 
+/// human color perception.
+pub struct EncodedAcesCgSrgb;
+
+impl_color_space! {
+    EncodedAcesCgSrgb is ENCODED_ACES_CG_SRGB,
+    Derefs as Rgb,
+    Decodes to AcesCg via sRGB_eotf, Encoded via sRGB_oetf
+}
+
+impl AsU8Array for EncodedAcesCgSrgb {}
 
 /// A type representing the [ACES 2065-1][dynamic_spaces::ACES2065_1] color space.
 pub struct Aces2065;
