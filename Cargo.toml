@@ -15,14 +15,23 @@ repository = "https://github.com/termhn/colstodian"
 # kolor = { version = "^0.1.4", default-features = false, features = ["f32", "color-matrices"] }
 # kolor = { version = "^0.1.4", default-features = false, features = ["f32", "color-matrices"], path = "../kolor/build/kolor" }
 kolor = { version = "^0.1.4", default-features = false, features = ["f32", "color-matrices"], git = "https://github.com/termhn/kolor", rev = "90c2f32" }
-glam = "0.13.1" # keep in sync with kolor
+glam = { version = "0.13.1", default-features = false } # keep in sync with kolor
 thiserror = "1.0"
 derivative = "2.2"
 serde = { version = "1", optional = true, features = ["derive"] }
 bytemuck = { version = "1.5.1", optional = true, features = ["derive"] }
 
 [features]
-default = ["with-serde", "std", "bytemuck"]
-with-serde = ["serde", "kolor/serde1"]
-std = ["kolor/std"]
-libm = ["kolor/libm"]
+default = ["std"]
+
+# enable support for the standard library
+std = ["kolor/std", "glam/std"]
+
+# libm is required when building with no_std
+libm = ["kolor/libm", "glam/libm"]
+
+# add serde Serialize/Deserialize to relevant types
+with-serde = ["serde", "kolor/serde1", "glam/serde"]
+
+# add relevant bytemuck trait implementations
+with-bytemuck = ["bytemuck", "glam/bytemuck"]

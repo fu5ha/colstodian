@@ -183,9 +183,9 @@
 //! * Timothy Lottes (AMD) on "variable" dynamic range color management: <https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day>
 //! * Hajime Uchimura and Kentaro Suzuki on HDR and Wide color strategies in Gran Turismo SPORT: <https://www.polyphony.co.jp/publications/sa2018/>
 
-pub use kolor;
 pub use glam;
-pub(crate) use glam::{Vec3, Vec4, Mat3};
+pub(crate) use glam::{Mat3, Vec3, Vec4};
+pub use kolor;
 
 use std::{marker::PhantomData, ops::*};
 

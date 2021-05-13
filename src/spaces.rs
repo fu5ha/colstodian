@@ -9,11 +9,8 @@ pub mod dynamic_spaces {
 
     pub use kolor::spaces::*;
 
-    pub const ENCODED_ACES_CG_SRGB: DynamicColorSpace = DynamicColorSpace::new(
-        RGBPrimaries::AP1,
-        WhitePoint::D60,
-        TransformFn::sRGB,
-    );
+    pub const ENCODED_ACES_CG_SRGB: DynamicColorSpace =
+        DynamicColorSpace::new(RGBPrimaries::AP1, WhitePoint::D60, TransformFn::sRGB);
 }
 
 macro_rules! impl_color_space {
@@ -202,7 +199,7 @@ impl_color_space! {
 ///
 /// This is useful to take advantage of many GPUs' hardware support for encoding and decoding using the
 /// sRGB transfer functions. Using the sRGB transfer functions to encode ACEScg data is useful when trying to
-/// use 8-bit texture formats. The OETF "compresses" the data to give better bit distribution based on 
+/// use 8-bit texture formats. The OETF "compresses" the data to give better bit distribution based on
 /// human color perception.
 pub struct EncodedAcesCgSrgb;
 

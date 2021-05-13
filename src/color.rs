@@ -3,17 +3,23 @@ use super::*;
 /// A strongly typed color, parameterized by a color space and state.
 ///
 /// See crate-level docs as well as [`ColorSpace`] and [`State`] for more.
-#[repr(C)]
+#[repr(transparent)]
 #[derive(Derivative)]
 #[derivative(Clone, Copy, PartialEq, Debug)]
 pub struct Color<Spc, St> {
-    /// The raw values of the color. Be careful when modifying this directly, i.e.
-    /// don't multiply two Colors' raw values unless they are in the same color space and state.
+    /// The raw values of the color. Be careful when modifying this directly.
     pub raw: Vec3,
     #[derivative(PartialEq = "ignore")]
     #[derivative(Debug = "ignore")]
     _pd: PhantomData<(Spc, St)>,
 }
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<Spc, St> bytemuck::Zeroable for Color<Spc, St> {}
+#[cfg(feature = "bytemuck")]
+unsafe impl<Spc, St> bytemuck::TransparentWrapper<Vec3> for Color<Spc, St> {}
+#[cfg(feature = "bytemuck")]
+unsafe impl<Spc: 'static, St: 'static> bytemuck::Pod for Color<Spc, St> {}
 
 impl<Spc, St> Color<Spc, St> {
     /// Creates a [`Color`] with the internal color elements `el1`, `el2`, `el3`.
@@ -163,7 +169,9 @@ impl<SrcSpace: ColorSpace, St> Color<SrcSpace, St> {
 }
 
 impl<Spc: LinearColorSpace, SrcSt> Color<Spc, SrcSt> {
-    /// Converts this color from one state to another. This conversion is usecase and even instance dependent.
+    /// Converts this color from one state to another.
+    ///
+    /// This conversion is usecase and even instance dependent.
     /// For example, converting a material's emissive texture value, a [`Display`]-referred color, to a [`Scene`]-referred
     /// color might take the form of a multiplication which scales the power of said emission into [`Scene`]-referred irradiance. On the other hand,
     /// converting a final [`Scene`]-referred color to a [`Display`]-referred color should be done with some kind of tonemapping
@@ -182,6 +190,32 @@ impl<Spc: LinearColorSpace, SrcSt> Color<Spc, SrcSt> {
     /// or that the proper conversion is simply a noop.
     pub fn cast_state<DstSt>(self) -> Color<Spc, DstSt> {
         Color::from_raw(self.raw)
+    }
+}
+
+impl<Spc: AsU8Array> Color<Spc, Display> {
+    /// Convert `self` to a `[u8; 3]`. All components of `self` *must* be in range `[0..1]`.
+    pub fn to_u8(self) -> [u8; 3] {
+        fn f32_to_u8(x: f32) -> u8 {
+            (x * 255.0).round() as u8
+        }
+        [
+            f32_to_u8(self.raw.x),
+            f32_to_u8(self.raw.y),
+            f32_to_u8(self.raw.z),
+        ]
+    }
+
+    /// Decode a `[u8; 4]` into a `Color` with specified space and state.
+    pub fn from_u8(encoded: [u8; 3]) -> Color<Spc, Display> {
+        fn u8_to_f32(x: u8) -> f32 {
+            x as f32 / 255.0
+        }
+        Color::new(
+            u8_to_f32(encoded[0]),
+            u8_to_f32(encoded[1]),
+            u8_to_f32(encoded[2]),
+        )
     }
 }
 
@@ -248,7 +282,8 @@ impl DynamicColor {
     /// Convert `self` to the given color space. Must not attempt to convert to or from
     /// a nonlinear color space while in scene-referred state.
     pub fn convert(self, dest_space: DynamicColorSpace) -> ColorResult<Self> {
-        if self.state == DynamicState::Scene && (!self.space.is_linear() || !dest_space.is_linear()) {
+        if self.state == DynamicState::Scene && (!self.space.is_linear() || !dest_space.is_linear())
+        {
             return Err(DynamicConversionError::NonlinearConversionInSceneState(
                 self.space, dest_space,
             )
