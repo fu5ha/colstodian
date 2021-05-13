@@ -20,14 +20,20 @@ pub struct Color<Spc, St> {
 
 impl<Spc: ColorSpace, St: State> fmt::Display for Color<Spc, St> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Color<{}, {}>: ({})", Spc::default(), St::default(), self.deref())
-    } 
+        write!(
+            f,
+            "Color<{}, {}>: ({})",
+            Spc::default(),
+            St::default(),
+            self.deref()
+        )
+    }
 }
 
 impl<Spc: ColorSpace, St: State> fmt::Debug for Color<Spc, St> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", *self)
-    } 
+    }
 }
 
 #[cfg(feature = "bytemuck")]

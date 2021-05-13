@@ -39,7 +39,7 @@ macro_rules! impl_color_space_inner {
         impl fmt::Display for $space {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 write!(f, $display)
-            } 
+            }
         }
 
         impl<St> Deref for Color<$space, St> {
