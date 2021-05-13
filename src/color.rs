@@ -1,17 +1,33 @@
 use super::*;
 
+use core::fmt;
+
+mod color_alpha;
+pub use color_alpha::*;
+
 /// A strongly typed color, parameterized by a color space and state.
 ///
 /// See crate-level docs as well as [`ColorSpace`] and [`State`] for more.
 #[repr(transparent)]
 #[derive(Derivative)]
-#[derivative(Clone, Copy, PartialEq, Debug)]
+#[derivative(Clone, Copy, PartialEq)]
 pub struct Color<Spc, St> {
     /// The raw values of the color. Be careful when modifying this directly.
     pub raw: Vec3,
     #[derivative(PartialEq = "ignore")]
-    #[derivative(Debug = "ignore")]
     _pd: PhantomData<(Spc, St)>,
+}
+
+impl<Spc: ColorSpace, St: State> fmt::Display for Color<Spc, St> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Color<{}, {}>: ({})", Spc::default(), St::default(), self.deref())
+    } 
+}
+
+impl<Spc: ColorSpace, St: State> fmt::Debug for Color<Spc, St> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", *self)
+    } 
 }
 
 #[cfg(feature = "bytemuck")]
@@ -138,6 +154,19 @@ impl<Spc: ColorSpace> Color<Spc, Display> {
     /// Converts `self` to a [`ColorAlpha`] with specified [`AlphaState`] by adding an alpha component.
     pub fn with_alpha<A: AlphaState>(self, alpha: f32) -> ColorAlpha<Spc, A> {
         ColorAlpha::from_raw(self.raw.extend(alpha))
+    }
+}
+
+impl<Spc: NonlinearColorSpace, St: State> Color<Spc, St> {
+    /// Convert `self` into the closest linear color space.
+    pub fn linearize(self) -> Color<Spc::LinearSpace, St> {
+        use kolor::details::{color::TransformFn, transform::ColorTransform};
+        let spc = Spc::SPACE;
+        Color::from_raw(
+            ColorTransform::new(spc.transform_function(), TransformFn::NONE)
+                .unwrap()
+                .apply(self.raw, spc.white_point()),
+        )
     }
 }
 
@@ -316,6 +345,24 @@ impl DynamicColor {
             space: self.space,
             state: dest_state,
         })
+    }
+
+    /// Convert `self` into the closest linear color space, if it is not linear already
+    pub fn linearize(self) -> Self {
+        use kolor::details::{color::TransformFn, transform::ColorTransform};
+        let spc = self.space;
+        let raw = if let Some(transform) =
+            ColorTransform::new(spc.transform_function(), TransformFn::NONE)
+        {
+            transform.apply(self.raw, spc.white_point())
+        } else {
+            self.raw
+        };
+        Self {
+            raw,
+            space: spc.as_linear(),
+            state: self.state,
+        }
     }
 
     /// Tonemap `self` using the [`Tonemapper`] `tonemapper`, converting `self` from being

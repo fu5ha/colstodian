@@ -2,14 +2,20 @@
 
 use super::*;
 
+use core::fmt;
+
 /// A type that implements ColorSpace represents a specific color space. See the documentation
 /// of [`DynamicColorSpace`] for more information about what a color space is.
-pub trait ColorSpace {
+pub trait ColorSpace: Default + fmt::Display {
     const SPACE: DynamicColorSpace;
+    type LinearSpace: LinearColorSpace;
 }
 
 /// Marks a type as representing a linear color space.
-pub trait LinearColorSpace {}
+pub trait LinearColorSpace: ColorSpace {}
+
+/// Marks a type as representing a nonlinear color space.
+pub trait NonlinearColorSpace: ColorSpace {}
 
 /// A type that implements this trait is a color space for which a linear conversion
 /// from `SrcSpace` to `Self` exists.
@@ -58,7 +64,7 @@ pub trait AsU8Array {}
 /// quantities, which we refer to as State. Colors which are defined in relation to display
 /// characteristic are called [`Display`]-referred, while color spaces which are defined in relation to input
 /// devices (scenes) are [`Scene`]-referred.
-pub trait State {
+pub trait State: Default + fmt::Display {
     const STATE: DynamicState;
 }
 
@@ -66,6 +72,6 @@ pub trait State {
 ///
 /// A color can either have a [`Separate`] alpha channel or have been pre-multiplied
 /// with its alpha channel and so have [`Premultiplied`] alpha.
-pub trait AlphaState {
+pub trait AlphaState: Default + fmt::Display {
     const STATE: DynamicAlphaState;
 }

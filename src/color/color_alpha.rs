@@ -10,13 +10,24 @@ use glam::Vec4Swizzles;
 /// See crate-level docs as well as [`ColorSpace`] and [`Alpha`] for more.
 #[repr(C)]
 #[derive(Derivative)]
-#[derivative(Clone, Copy, PartialEq, Debug)]
+#[derivative(Clone, Copy, PartialEq)]
 pub struct ColorAlpha<Spc, A> {
     /// The raw values of the color. Be careful when modifying this directly.
     pub raw: Vec4,
     #[derivative(PartialEq = "ignore")]
-    #[derivative(Debug = "ignore")]
     _pd: PhantomData<(Spc, A)>,
+}
+
+impl<Spc: ColorSpace, A: AlphaState> fmt::Display for ColorAlpha<Spc, A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Color<{}, {}>: ({})", Spc::default(), A::default(), self.deref())
+    } 
+}
+
+impl<Spc: ColorSpace, A: AlphaState> fmt::Debug for ColorAlpha<Spc, A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", *self)
+    } 
 }
 
 #[cfg(feature = "bytemuck")]
@@ -108,13 +119,59 @@ impl_op_color!(Div, div);
 impl_op_color_float!(Mul, mul);
 impl_op_color_float!(Div, div);
 
-impl<SrcSpace: ColorSpace> ColorAlpha<SrcSpace, Separate> {
+impl<SrcSpace: ColorSpace, SrcAlpha: AlphaState> ColorAlpha<SrcSpace, SrcAlpha> {
     /// Converts from one color space to another. This is only implemented for the [`Separate`] alpha
     /// state because converting colors between nonlinear spaces with [`Premultiplied`] alpha is not a well-defined operation
     /// and will lead to odd behavior.
-    pub fn convert<DstSpace: ColorSpace>(self) -> ColorAlpha<DstSpace, Display> {
+    pub fn convert<DstSpace: ColorSpace, DstAlpha: AlphaState>(
+        self,
+    ) -> ColorAlpha<DstSpace, DstAlpha> {
         let conversion = kolor::ColorConversion::new(SrcSpace::SPACE, DstSpace::SPACE);
-        ColorAlpha::from_raw(conversion.convert(self.raw.xyz()).extend(self.raw.w))
+
+        let linear: ColorAlpha<SrcSpace::LinearSpace, SrcAlpha> = ColorAlpha::from_raw(
+            conversion
+                .apply_src_transform(self.raw.xyz())
+                .extend(self.raw.w),
+        );
+
+        let separate = if SrcAlpha::STATE == DynamicAlphaState::Premultiplied {
+            linear.cast_alpha_state().separate()
+        } else {
+            linear.cast_alpha_state()
+        };
+
+        let dst_linear: ColorAlpha<DstSpace::LinearSpace, Separate> = ColorAlpha::from_raw(
+            conversion
+                .apply_linear_part(separate.raw.xyz())
+                .extend(separate.raw.w),
+        );
+
+        let maybe_premult: ColorAlpha<DstSpace::LinearSpace, DstAlpha> =
+            if DstAlpha::STATE == DynamicAlphaState::Premultiplied {
+                dst_linear.premultiply().cast_alpha_state()
+            } else {
+                dst_linear.cast_alpha_state()
+            };
+
+        ColorAlpha::from_raw(
+            conversion
+                .apply_dst_transform(maybe_premult.raw.xyz())
+                .extend(self.raw.w),
+        )
+    }
+}
+
+impl<Spc: NonlinearColorSpace, A: AlphaState> ColorAlpha<Spc, A> {
+    /// Convert `self` into the closest linear color space.
+    pub fn linearize(self) -> ColorAlpha<Spc::LinearSpace, A> {
+        use kolor::details::{color::TransformFn, transform::ColorTransform};
+        let spc = Spc::SPACE;
+        ColorAlpha::from_raw(
+            ColorTransform::new(spc.transform_function(), TransformFn::NONE)
+                .unwrap()
+                .apply(self.raw.xyz(), spc.white_point())
+                .extend(self.raw.w),
+        )
     }
 }
 
@@ -173,7 +230,7 @@ impl<Spc: AsU8Array, A: AlphaState> ColorAlpha<Spc, A> {
     }
 }
 
-impl<Spc: LinearColorSpace, A> ColorAlpha<Spc, A> {
+impl<Spc, A> ColorAlpha<Spc, A> {
     /// Changes this color's alpha State. This assumes that you have done some kind of conversion externally.
     pub fn cast_alpha_state<DstAlpha: AlphaState>(self) -> ColorAlpha<Spc, DstAlpha> {
         ColorAlpha::from_raw(self.raw)

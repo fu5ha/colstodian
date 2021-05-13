@@ -9,17 +9,21 @@ documentation = "https://docs.rs/colstodian"
 homepage = "https://github.com/termhn/colstodian"
 repository = "https://github.com/termhn/colstodian"
 
+[package.metadata.docs.rs]
+features = ["std", "with-serde", "with-bytemuck"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/state/manifest.html
 
 [dependencies]
 # kolor = { version = "^0.1.4", default-features = false, features = ["f32", "color-matrices"] }
 # kolor = { version = "^0.1.4", default-features = false, features = ["f32", "color-matrices"], path = "../kolor/build/kolor" }
-kolor = { version = "^0.1.4", default-features = false, features = ["f32", "color-matrices"], git = "https://github.com/termhn/kolor", rev = "90c2f32" }
+kolor = { version = "^0.1.4", default-features = false, features = ["f32", "color-matrices"], git = "https://github.com/termhn/kolor", rev = "4c0b857" }
 glam = { version = "0.13.1", default-features = false } # keep in sync with kolor
 thiserror = "1.0"
 derivative = "2.2"
 serde = { version = "1", optional = true, features = ["derive"] }
 bytemuck = { version = "1.5.1", optional = true, features = ["derive"] }
+num-traits = { version = "^0.2.14", optional = true, default-features = false }
 
 [features]
 default = ["std"]
@@ -28,7 +32,7 @@ default = ["std"]
 std = ["kolor/std", "glam/std"]
 
 # libm is required when building with no_std
-libm = ["kolor/libm", "glam/libm"]
+libm = ["kolor/libm", "glam/libm", "num-traits", "num-traits/libm"]
 
 # add serde Serialize/Deserialize to relevant types
 with-serde = ["serde", "kolor/serde1", "glam/serde"]

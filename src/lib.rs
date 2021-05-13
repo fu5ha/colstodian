@@ -182,12 +182,15 @@
 //! * Alex Fry (DICE/Frostbite) on HDR color management in Frostbite: <https://www.youtube.com/watch?v=7z_EIjNG0pQ>
 //! * Timothy Lottes (AMD) on "variable" dynamic range color management: <https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day>
 //! * Hajime Uchimura and Kentaro Suzuki on HDR and Wide color strategies in Gran Turismo SPORT: <https://www.polyphony.co.jp/publications/sa2018/>
+#![cfg_attr(not(feature = "std"), no_std)]
 
-pub use glam;
+#[cfg(not(feature = "std"))]
+pub(crate) use num_traits::Float;
+
 pub(crate) use glam::{Mat3, Vec3, Vec4};
 pub use kolor;
 
-use std::{marker::PhantomData, ops::*};
+use core::{marker::PhantomData, ops::*};
 
 #[cfg(feature = "with-serde")]
 use serde::{Deserialize, Serialize};
@@ -216,16 +219,13 @@ pub mod tonemapper;
 pub use tonemapper::*;
 
 pub mod component_structs;
+pub use component_structs::*;
 
-/// Contains the [`Color`] and [`DynamicColor`] types.
+/// Contains color types and helper functions.
 pub mod color;
 pub use color::*;
 
-/// Contains the [`ColorAlpha`] and [`DynamicColorAlpha`] types.
-pub mod color_alpha;
-pub use color_alpha::*;
-
-/// The traits which form the backbone of the strongly-typed [`Color`]/[`ColorAlpha`].
+/// The traits which form the backbone of the strongly-typed [`Color`] & [`ColorAlpha`].
 pub mod traits;
 pub use traits::*;
 
@@ -287,5 +287,31 @@ mod tests {
         let fin: Color<EncodedSrgb, Display> = col.encode();
 
         assert_eq_eps!(orig, fin, 0.0001);
+    }
+
+    #[test]
+    fn deref() {
+        let col: Color<EncodedSrgb, Display> = Color::new(0.2, 0.3, 0.4);
+        let r = col.r;
+        let g = col.g;
+        let b = col.b;
+
+        assert_eq_eps!(r, 0.2, 0.0001);
+        assert_eq_eps!(g, 0.3, 0.0001);
+        assert_eq_eps!(b, 0.4, 0.0001);
+    }
+
+    #[test]
+    fn deref_alpha() {
+        let colalpha: ColorAlpha<EncodedSrgb, Premultiplied> = ColorAlpha::new(0.2, 0.3, 0.4, 0.5);
+        let r = colalpha.col.r;
+        let g = colalpha.col.g;
+        let b = colalpha.col.b;
+        let alpha = colalpha.alpha;
+
+        assert_eq_eps!(r, 0.2, 0.0001);
+        assert_eq_eps!(g, 0.3, 0.0001);
+        assert_eq_eps!(b, 0.4, 0.0001);
+        assert_eq_eps!(alpha, 0.5, 0.0001);
     }
 }
