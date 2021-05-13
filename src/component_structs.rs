@@ -12,7 +12,7 @@ pub struct Rgb {
     pub b: f32,
 }
 
-/// A bag of components with names I, Ct, Cp. Some `Color`s with ICtCp color spaces
+/// A bag of components with names I (Intensity), Ct (Chroma-Tritan), Cp (Chroma-Protan). Some `Color`s
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
 pub struct ICtCp {
     pub i: f32,
@@ -26,4 +26,22 @@ pub struct Xyz {
     pub x: f32,
     pub y: f32,
     pub z: f32,
+}
+
+/// A bag of components with names L (Luminance), a (green-red chroma), b (blue-yellow chroma).
+/// Some `Color`s with XYZ color spaces will `Deref`/`DerefMut` to this struct so that you can
+/// access their components with dot-syntax.
+pub struct Lab {
+    pub l: f32,
+    pub a: f32,
+    pub b: f32,
+}
+
+/// A bag of components with names L (Luminance), C (chroma), h (hue).
+/// Some `Color`s with XYZ color spaces will `Deref`/`DerefMut` to this struct so that you can
+/// access their components with dot-syntax.
+pub struct LCh {
+    pub l: f32,
+    pub c: f32,
+    pub h: f32,
 }

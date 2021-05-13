@@ -20,7 +20,7 @@ pub trait LinearConvertFrom<SrcSpc> {
 
 /// A type that implements this trait is a color space for which a single nonlinear
 /// transform function exists to decode a color from `SrcSpace` into `Self`. For example,
-/// `LinearSrgb` implements `DecodeFrom<EncodedSrgb>`.
+/// [`LinearSrgb`] implements [`DecodeFrom<EncodedSrgb>`].
 pub trait DecodeFrom<SrcSpc> {
     /// Decode the raw color from `SrcSpace` into the space represented by `Self`
     fn decode_raw(color: Vec3) -> Vec3;
@@ -28,7 +28,7 @@ pub trait DecodeFrom<SrcSpc> {
 
 /// A type that implements this trait is a color space for which a single nonlinear
 /// transform function exists to encode a color from `SrcSpace` into `Self`. For example,
-/// `EncodedSrgb` implements `EncodeFrom<LinearSrgb>`.
+/// [`EncodedSrgb`] implements [`EncodeFrom<LinearSrgb>`].
 pub trait EncodeFrom<SrcSpace> {
     /// Encode the raw color from `SrcSpace` into the space represented by `Self`
     fn encode_raw(color: Vec3) -> Vec3;
@@ -36,7 +36,7 @@ pub trait EncodeFrom<SrcSpace> {
 
 /// A type that implements this trait represents a color's State.
 ///
-/// All Colors have units. Sometimes a Color's units are explicit, such as measuring the emitted
+/// All colors have units. Sometimes a color's units are explicit, such as measuring the emitted
 /// light from a display using a spectroradiometer and being able to reference pixel values in CIE XYZ cd/m2.
 /// Other times, the units are only indirectly related to the real world, and then providing a
 /// mathematical conversion to measurable quantities. For example, in the case of display technology, common color encodings
