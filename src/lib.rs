@@ -63,7 +63,7 @@
 //!
 //! The core of the statically-typed half is the [`Color`] type, which encodes
 //! two important pieces of metadata about the color in its type signature (`Color<Space, State>`): the
-//! color's **color space** and **state**. If you read the required reading (you did, didn't you? ;))
+//! color's **color space** and **state**. If you read the color encoding basics above (you did, didn't you? ;) )
 //! then you should have a decent idea of what both of these things mean. To be clear, the **color space**
 //! encodes the **primaries**, **white point**, and **transfer functions** upon which the color values are
 //! based. The **state** encodes in which "direction" we relate the color values to real-world quantities:
