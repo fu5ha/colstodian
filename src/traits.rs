@@ -1,6 +1,10 @@
 //! [`Color`] system.
+use crate::{
+    Color, ColorResult, DynamicAlphaState, DynamicColor, DynamicColorSpace, DynamicState,
+    Premultiplied, Separate,
+};
 
-use super::*;
+use glam::Vec3;
 
 use core::fmt;
 
@@ -171,4 +175,35 @@ impl<SrcAlpha, DstAlpha: ConvertFromAlphaRaw<SrcAlpha>> ConvertToAlphaRaw<DstAlp
     fn convert_raw(raw: Vec3, alpha: f32) -> Vec3 {
         <DstAlpha as ConvertFromAlphaRaw<SrcAlpha>>::convert_raw(raw, alpha)
     }
+}
+
+/// An object-safe trait implemented by both [`Color`] and [`DynamicColor`].
+pub trait AnyColor {
+    fn raw(&self) -> Vec3;
+    fn space(&self) -> DynamicColorSpace;
+    fn state(&self) -> DynamicState;
+
+    /// Upcasts `self` into a [`DynamicColor`]
+    fn dynamic(&self) -> DynamicColor {
+        DynamicColor::new(self.raw(), self.space(), self.state())
+    }
+}
+
+impl<'a> From<&'a dyn AnyColor> for DynamicColor {
+    fn from(color: &'a dyn AnyColor) -> DynamicColor {
+        color.dynamic()
+    }
+}
+
+/// A type that implements this trait provides the ability to downcast from a dynamically-typed
+/// color to a statically-typed [`Color`]. This is implemented for all types that implement [`AnyColor`]
+pub trait DynColor {
+    /// Attempt to convert to a typed `Color`. Returns an error if `self`'s color space and state do not match
+    /// the given types.
+    fn downcast<Spc: ColorSpace, St: State>(&self) -> ColorResult<Color<Spc, St>>;
+
+    /// Convert to a typed `Color` without checking if the color space and state types
+    /// match this color's space and state. Use only if you are sure that this color
+    /// is in the correct format.
+    fn downcast_unchecked<Spc: ColorSpace, St: State>(&self) -> Color<Spc, St>;
 }

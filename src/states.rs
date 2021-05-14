@@ -2,6 +2,9 @@ use super::*;
 
 use core::fmt;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 /// Encodes that a color is [`Scene`]-referred (in the range [0..inf)), defined in relation
 /// to input values from a (virtual) camera or other input device. Usually
 /// representing something like radiance in an HDR rendering pipeline.

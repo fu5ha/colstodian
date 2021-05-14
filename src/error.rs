@@ -1,4 +1,4 @@
-use super::*;
+use crate::{DynamicAlphaState, DynamicColorSpace, DynamicState};
 
 /// Any error which can occur within the library.
 #[derive(thiserror::Error, Debug)]

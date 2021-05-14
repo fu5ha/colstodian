@@ -1,9 +1,22 @@
-use super::*;
+use crate::traits::*;
+use crate::{
+    error::{DowncastError, DynamicConversionError},
+    tonemapper::Tonemapper,
+    AcesCg, ColorResult, Display, DynamicAlphaState, DynamicColorSpace, DynamicState, EncodedSrgb,
+    LinearSrgb, Scene, Separate,
+};
+
+use derivative::*;
+use glam::Vec3;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 use core::fmt;
+use core::marker::PhantomData;
+use core::ops::*;
 
 mod color_alpha;
-pub use color_alpha::*;
+pub use color_alpha::{linear_srgba, srgba, srgba_u8, ColorAlpha, DynamicColorAlpha};
 
 /// A strongly typed color, parameterized by a color space and state.
 ///
@@ -17,6 +30,7 @@ pub struct Color<Spc, St> {
     #[derivative(PartialEq = "ignore")]
     _pd: PhantomData<(Spc, St)>,
 }
+
 impl<Spc, St> Color<Spc, St> {
     /// Creates a [`Color`] with the internal color elements `el1`, `el2`, `el3`.
     #[inline]
@@ -444,37 +458,6 @@ impl From<DynamicColor> for kolor::Color {
             space: color.space,
         }
     }
-}
-
-/// An object-safe trait implemented by both [`Color`] and [`DynamicColor`].
-pub trait AnyColor {
-    fn raw(&self) -> Vec3;
-    fn space(&self) -> DynamicColorSpace;
-    fn state(&self) -> DynamicState;
-
-    /// Upcasts `self` into a [`DynamicColor`]
-    fn dynamic(&self) -> DynamicColor {
-        DynamicColor::new(self.raw(), self.space(), self.state())
-    }
-}
-
-impl<'a> From<&'a dyn AnyColor> for DynamicColor {
-    fn from(color: &'a dyn AnyColor) -> DynamicColor {
-        color.dynamic()
-    }
-}
-
-/// A type that implements this trait provides the ability to downcast from a dynamically-typed
-/// color to a statically-typed [`Color`]. This is implemented for all types that implement [`AnyColor`]
-pub trait DynColor {
-    /// Attempt to convert to a typed `Color`. Returns an error if `self`'s color space and state do not match
-    /// the given types.
-    fn downcast<Spc: ColorSpace, St: State>(&self) -> ColorResult<Color<Spc, St>>;
-
-    /// Convert to a typed `Color` without checking if the color space and state types
-    /// match this color's space and state. Use only if you are sure that this color
-    /// is in the correct format.
-    fn downcast_unchecked<Spc: ColorSpace, St: State>(&self) -> Color<Spc, St>;
 }
 
 impl<C: AnyColor> DynColor for C {

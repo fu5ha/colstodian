@@ -181,8 +181,7 @@
 //! This example snippet puts together much of what we've learned so far.
 //!
 //! ```rust
-//! use colstodian::*;
-//!
+//! # use colstodian::*;
 //! fn tint_color(input_color: impl ConvertTo<Color<AcesCg, Display>>) -> Color<AcesCg, Display> {
 //!     let color = input_color.convert();
 //!     let tint: Color<AcesCg, Display> = Color::new(0.5, 0.8, 0.4);
@@ -261,7 +260,10 @@
 //! ```rust
 //! # use colstodian::*;
 //! # let rendered_col = color::acescg::<Scene>(5.0, 4.0, 4.5);
-//! let tonemapper = LottesTonemapper::new(LottesTonemapperParams::default()); // In reality you would customize the parameters here
+//! use tonemapper::{LottesTonemapper, LottesTonemapperParams};
+//!
+//! // In reality you would change the parameters to fit the scene here.
+//! let tonemapper = LottesTonemapper::new(LottesTonemapperParams::default());
 //! let tonemapped: Color<AcesCg, Display> = rendered_col.tonemap(tonemapper);
 //! ```
 //!
@@ -301,18 +303,9 @@
 //! * Hajime Uchimura and Kentaro Suzuki on HDR and Wide color strategies in Gran Turismo SPORT: <https://www.polyphony.co.jp/publications/sa2018/>
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(not(feature = "std"))]
-pub(crate) use num_traits::Float;
-
-pub(crate) use glam::{Mat3, Vec3, Vec4};
 pub use kolor;
 
-use core::{marker::PhantomData, ops::*};
-
-#[cfg(feature = "with-serde")]
-use serde::{Deserialize, Serialize};
-
-use derivative::*;
+use core::ops::*;
 
 /// Types representing different color spaces.
 ///
@@ -321,35 +314,35 @@ use derivative::*;
 /// implementation of the [`ColorSpace`] trait on a specific color space struct.
 #[rustfmt::skip]
 pub mod spaces;
+pub use spaces::DynamicColorSpace;
 pub use spaces::*;
 
 /// Contains types relating to a color's state.
 pub mod states;
-pub use states::*;
+pub use states::{Display, DynamicState, Scene};
 
 /// Contains types relating to a color's alpha state.
 pub mod alpha_states;
-pub use alpha_states::*;
+pub use alpha_states::{DynamicAlphaState, Premultiplied, Separate};
 
 /// Contains tonemappers, useful for mapping scene-referred HDR values into display-referred values
 /// within the concrete dynamic range of a specific display.
 pub mod tonemapper;
-pub use tonemapper::*;
 
 pub mod component_structs;
 pub use component_structs::*;
 
 /// Contains color types and helper functions.
 pub mod color;
-pub use color::*;
+pub use color::{Color, ColorAlpha, DynamicColor, DynamicColorAlpha};
 
 /// The traits which form the backbone of the strongly-typed [`Color`] & [`ColorAlpha`].
 pub mod traits;
-pub use traits::*;
+pub use traits::{AlphaState, AnyColor, ColorSpace, ConvertTo, DynColor, State};
 
 /// Error handling types.
 pub mod error;
-pub use error::*;
+pub use error::{ColorError, ColorResult};
 
 /// Linearly interpolate between `range.start()..=range.end()` by `factor`.
 pub fn lerp<T>(range: RangeInclusive<T>, factor: f32) -> T

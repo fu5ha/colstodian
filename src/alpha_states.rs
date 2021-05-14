@@ -1,4 +1,8 @@
-use super::*;
+use crate::traits::*;
+
+use glam::Vec3;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 use core::fmt;
 

@@ -1,6 +1,17 @@
-use super::*;
+use core::fmt;
+use core::marker::PhantomData;
+use core::ops::*;
 
-use glam::Vec4Swizzles;
+use crate::{
+    error::DowncastError, traits::*, ColAlpha, Color, ColorResult, Display, DynamicAlphaState,
+    DynamicColor, DynamicColorSpace, DynamicState, EncodedSrgb, LinearSrgb, Premultiplied,
+    Separate,
+};
+
+use derivative::*;
+use glam::{Vec4, Vec4Swizzles};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// A strongly typed color with an alpha channel, parameterized by a color space and alpha state.
 ///

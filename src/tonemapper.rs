@@ -1,4 +1,4 @@
-use super::*;
+use glam::Vec3;
 
 /// Performs tonemapping on a given input color.
 pub trait Tonemapper {
