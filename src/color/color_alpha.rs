@@ -88,6 +88,125 @@ pub fn linear_srgba<A: AlphaState>(r: f32, g: f32, b: f32, a: f32) -> ColorAlpha
     ColorAlpha::new(r, g, b, a)
 }
 
+impl<SrcSpace, SrcAlpha> ColorAlpha<SrcSpace, SrcAlpha>
+where
+    SrcSpace: ColorSpace,
+    SrcAlpha: AlphaState,
+{
+    /// Converts from one color space to another. This is only implemented for the [`Separate`] alpha
+    /// state because converting colors between nonlinear spaces with [`Premultiplied`] alpha is not a well-defined operation
+    /// and will lead to odd behavior.
+    pub fn convert<DstSpace, DstAlpha>(self) -> ColorAlpha<DstSpace, DstAlpha>
+    where
+        DstSpace: ConvertFromRaw<SrcSpace>,
+        DstAlpha: AlphaState,
+    {
+        let alpha = self.raw.w;
+
+        let linear = <DstSpace as ConvertFromRaw<SrcSpace>>::src_transform_raw(self.raw.xyz());
+
+        let separate = <SrcAlpha as ConvertToAlphaRaw<Separate>>::convert_raw(linear, alpha);
+
+        let dst_linear = <DstSpace as ConvertFromRaw<SrcSpace>>::linear_part_raw(separate);
+
+        let dst_alpha = <DstAlpha as ConvertFromAlphaRaw<Separate>>::convert_raw(dst_linear, alpha);
+
+        let dst = <DstSpace as ConvertFromRaw<SrcSpace>>::dst_transform_raw(dst_alpha);
+
+        ColorAlpha::from_raw(dst.extend(alpha))
+    }
+
+    /// Converts `self` to the provided `DstAlpha` [`AlphaState`].
+    ///
+    /// * If converting to the same state, this is a no-op.
+    /// * If converting from [Premultiplied] to [Separate], you must ensure that `self.alpha != 0.0`, otherwise
+    /// a divide by 0 will occur and `Inf`s will result.
+    pub fn convert_alpha<DstAlpha: ConvertFromAlphaRaw<SrcAlpha> + AlphaState>(
+        self,
+    ) -> ColorAlpha<SrcSpace, DstAlpha> {
+        let raw = self.raw.xyz();
+        let alpha = self.raw.w;
+        let converted = <DstAlpha as ConvertFromAlphaRaw<SrcAlpha>>::convert_raw(raw, alpha);
+        ColorAlpha::from_raw(converted.extend(alpha))
+    }
+
+    /// Interprets this color as `DstSpace`. This assumes you have done an external computation/conversion such that this
+    /// cast is valid.
+    pub fn cast_space<DstSpace: ColorSpace>(self) -> ColorAlpha<DstSpace, SrcAlpha> {
+        ColorAlpha::from_raw(self.raw)
+    }
+
+    /// Changes this color's alpha state. This assumes that you have done some kind of computation/conversion such that this
+    /// cast is valid.
+    pub fn cast_alpha_state<DstAlpha: AlphaState>(self) -> ColorAlpha<SrcSpace, DstAlpha> {
+        ColorAlpha::from_raw(self.raw)
+    }
+
+    /// Changes this color's alpha state. This assumes that you have done some kind of computation/conversion such that this
+    /// cast is valid.
+    pub fn cast<DstSpace: ColorSpace, DstAlpha: AlphaState>(
+        self,
+    ) -> ColorAlpha<DstSpace, DstAlpha> {
+        ColorAlpha::from_raw(self.raw)
+    }
+}
+
+impl<Spc: NonlinearColorSpace, A: AlphaState> ColorAlpha<Spc, A> {
+    /// Convert `self` into the closest linear color space.
+    pub fn linearize(self) -> ColorAlpha<Spc::LinearSpace, A> {
+        use kolor::details::{color::TransformFn, transform::ColorTransform};
+        let spc = Spc::SPACE;
+        ColorAlpha::from_raw(
+            ColorTransform::new(spc.transform_function(), TransformFn::NONE)
+                .unwrap()
+                .apply(self.raw.xyz(), spc.white_point())
+                .extend(self.raw.w),
+        )
+    }
+}
+
+impl<Spc> ColorAlpha<Spc, Separate> {
+    /// Converts `self` to a [`Color`] by stripping off the alpha component.
+    pub fn into_color_no_premultiply(self) -> Color<Spc, Display> {
+        Color::from_raw(self.raw.xyz())
+    }
+}
+
+impl<Spc> ColorAlpha<Spc, Premultiplied> {
+    /// Converts `self` to a [`Color`] by stripping off the alpha component.
+    pub fn into_color(self) -> Color<Spc, Display> {
+        Color::from_raw(self.raw.xyz())
+    }
+}
+
+impl<Spc: AsU8Array, A: AlphaState> ColorAlpha<Spc, A> {
+    /// Convert `self` to a `[u8; 4]`. All components of `self` *must* be in range `[0..1]`.
+    pub fn to_u8(self) -> [u8; 4] {
+        fn f32_to_u8(x: f32) -> u8 {
+            (x * 255.0).round() as u8
+        }
+        [
+            f32_to_u8(self.raw.x),
+            f32_to_u8(self.raw.y),
+            f32_to_u8(self.raw.z),
+            f32_to_u8(self.raw.w),
+        ]
+    }
+
+    /// Decode a `[u8; 4]` into a `ColorAlpha` with specified space and alpha state.
+    pub fn from_u8(encoded: [u8; 4]) -> ColorAlpha<Spc, A> {
+        fn u8_to_f32(x: u8) -> f32 {
+            x as f32 / 255.0
+        }
+        ColorAlpha::new(
+            u8_to_f32(encoded[0]),
+            u8_to_f32(encoded[1]),
+            u8_to_f32(encoded[2]),
+            u8_to_f32(encoded[3]),
+        )
+    }
+}
+
 macro_rules! impl_op_color {
     ($op:ident, $op_func:ident) => {
         impl<Spc: LinearColorSpace, A> $op for ColorAlpha<Spc, A> {
@@ -124,165 +243,6 @@ impl_op_color!(Div, div);
 
 impl_op_color_float!(Mul, mul);
 impl_op_color_float!(Div, div);
-
-impl<SrcSpace: ColorSpace, SrcAlpha: AlphaState> ColorAlpha<SrcSpace, SrcAlpha> {
-    /// Converts from one color space to another. This is only implemented for the [`Separate`] alpha
-    /// state because converting colors between nonlinear spaces with [`Premultiplied`] alpha is not a well-defined operation
-    /// and will lead to odd behavior.
-    pub fn convert<DstSpace: ColorSpace, DstAlpha: AlphaState>(
-        self,
-    ) -> ColorAlpha<DstSpace, DstAlpha> {
-        let conversion = kolor::ColorConversion::new(SrcSpace::SPACE, DstSpace::SPACE);
-
-        let linear: ColorAlpha<SrcSpace::LinearSpace, SrcAlpha> = ColorAlpha::from_raw(
-            conversion
-                .apply_src_transform(self.raw.xyz())
-                .extend(self.raw.w),
-        );
-
-        let separate = if SrcAlpha::STATE == DynamicAlphaState::Premultiplied {
-            linear.cast_alpha_state().separate()
-        } else {
-            linear.cast_alpha_state()
-        };
-
-        let dst_linear: ColorAlpha<DstSpace::LinearSpace, Separate> = ColorAlpha::from_raw(
-            conversion
-                .apply_linear_part(separate.raw.xyz())
-                .extend(separate.raw.w),
-        );
-
-        let maybe_premult: ColorAlpha<DstSpace::LinearSpace, DstAlpha> =
-            if DstAlpha::STATE == DynamicAlphaState::Premultiplied {
-                dst_linear.premultiply().cast_alpha_state()
-            } else {
-                dst_linear.cast_alpha_state()
-            };
-
-        ColorAlpha::from_raw(
-            conversion
-                .apply_dst_transform(maybe_premult.raw.xyz())
-                .extend(self.raw.w),
-        )
-    }
-}
-
-impl<Spc: NonlinearColorSpace, A: AlphaState> ColorAlpha<Spc, A> {
-    /// Convert `self` into the closest linear color space.
-    pub fn linearize(self) -> ColorAlpha<Spc::LinearSpace, A> {
-        use kolor::details::{color::TransformFn, transform::ColorTransform};
-        let spc = Spc::SPACE;
-        ColorAlpha::from_raw(
-            ColorTransform::new(spc.transform_function(), TransformFn::NONE)
-                .unwrap()
-                .apply(self.raw.xyz(), spc.white_point())
-                .extend(self.raw.w),
-        )
-    }
-}
-
-impl<SrcSpace: ColorSpace, A> ColorAlpha<SrcSpace, A> {
-    /// Converts from a linear color space to another linear color space. This transformation ultimately
-    /// boils down to a single 3x3 matrix * vector3 multiplication. This should be preferred when available
-    /// over the more generic `ColorAlpha::convert`.
-    pub fn convert_linear<DstSpace: LinearConvertFrom<SrcSpace>>(self) -> ColorAlpha<DstSpace, A> {
-        let conversion_mat =
-            Mat3::from_cols_array(&<DstSpace as LinearConvertFrom<SrcSpace>>::MATRIX).transpose();
-        ColorAlpha::from_raw((conversion_mat * self.raw.xyz()).extend(self.raw.w))
-    }
-
-    /// Interprets this color as `DstSpace`. This assumes you have done an external computation/conversion such that this
-    /// cast is valid.
-    pub fn cast_space<DstSpace: ColorSpace>(self) -> ColorAlpha<DstSpace, A> {
-        ColorAlpha::from_raw(self.raw)
-    }
-
-    /// Decodes `self` into the specified color space.
-    pub fn decode<DstSpace: DecodeFrom<SrcSpace>>(self) -> ColorAlpha<DstSpace, A> {
-        ColorAlpha::from_raw(DstSpace::decode_raw(self.raw.xyz()).extend(self.raw.w))
-    }
-
-    /// Encodes `self` into the specified color space.
-    pub fn encode<DstSpace: EncodeFrom<SrcSpace>>(self) -> ColorAlpha<DstSpace, A> {
-        ColorAlpha::from_raw(DstSpace::encode_raw(self.raw.xyz()).extend(self.raw.w))
-    }
-}
-
-impl<Spc: AsU8Array, A: AlphaState> ColorAlpha<Spc, A> {
-    /// Convert `self` to a `[u8; 4]`. All components of `self` *must* be in range `[0..1]`.
-    pub fn to_u8(self) -> [u8; 4] {
-        fn f32_to_u8(x: f32) -> u8 {
-            (x * 255.0).round() as u8
-        }
-        [
-            f32_to_u8(self.raw.x),
-            f32_to_u8(self.raw.y),
-            f32_to_u8(self.raw.z),
-            f32_to_u8(self.raw.w),
-        ]
-    }
-
-    /// Decode a `[u8; 4]` into a `ColorAlpha` with specified space and alpha state.
-    pub fn from_u8(encoded: [u8; 4]) -> ColorAlpha<Spc, A> {
-        fn u8_to_f32(x: u8) -> f32 {
-            x as f32 / 255.0
-        }
-        ColorAlpha::new(
-            u8_to_f32(encoded[0]),
-            u8_to_f32(encoded[1]),
-            u8_to_f32(encoded[2]),
-            u8_to_f32(encoded[3]),
-        )
-    }
-}
-
-impl<Spc, A> ColorAlpha<Spc, A> {
-    /// Changes this color's alpha State. This assumes that you have done some kind of conversion externally.
-    pub fn cast_alpha_state<DstAlpha: AlphaState>(self) -> ColorAlpha<Spc, DstAlpha> {
-        ColorAlpha::from_raw(self.raw)
-    }
-}
-
-impl<Spc: LinearColorSpace> ColorAlpha<Spc, Separate> {
-    /// Premultiply `self`'s first three components with its alpha, resulting in a color with [`Premultiplied`] alpha.
-    pub fn premultiply(self) -> ColorAlpha<Spc, Premultiplied> {
-        ColorAlpha::from_raw((self.raw.xyz() * self.raw.w).extend(self.raw.w))
-    }
-}
-
-impl<Spc: LinearColorSpace> ColorAlpha<Spc, Premultiplied> {
-    /// The inverse of [`ColorAlpha::premultiply`]. Divides `self`'s first three components by its alpha, resulting in a color with [`Separate`] alpha.
-    ///
-    /// This operation does nothing if `self`'s alpha is 0.0.
-    pub fn separate(self) -> ColorAlpha<Spc, Separate> {
-        let col = if self.raw.w != 0.0 {
-            self.raw.xyz() / self.raw.w
-        } else {
-            self.raw.xyz()
-        };
-        ColorAlpha::from_raw(col.extend(self.raw.w))
-    }
-}
-
-impl<Spc> ColorAlpha<Spc, Separate> {
-    /// Converts `self` to a [`Color`] by stripping off the alpha component.
-    pub fn into_color_no_premultiply(self) -> Color<Spc, Display> {
-        Color::from_raw(self.raw.xyz())
-    }
-}
-
-impl<Spc> ColorAlpha<Spc, Premultiplied> {
-    /// Converts `self` to a [`Color`] by stripping off the alpha component.
-    pub fn into_color(self) -> Color<Spc, Display> {
-        Color::from_raw(self.raw.xyz())
-    }
-}
-
-impl<Spc> From<ColorAlpha<Spc, Premultiplied>> for Color<Spc, Display> {
-    fn from(c: ColorAlpha<Spc, Premultiplied>) -> Self {
-        c.into_color()
-    }
-}
 
 /// A dynamic color with an alpha channel, with its space and alpha defined
 /// as data. This is mostly useful for (de)serialization.

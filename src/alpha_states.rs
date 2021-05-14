@@ -11,6 +11,13 @@ impl AlphaState for Premultiplied {
     const STATE: DynamicAlphaState = DynamicAlphaState::Premultiplied;
 }
 
+impl ConvertFromAlphaRaw<Separate> for Premultiplied {
+    #[inline]
+    fn convert_raw(raw: Vec3, alpha: f32) -> Vec3 {
+        raw * alpha
+    }
+}
+
 impl fmt::Display for Premultiplied {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Premultiplied")
@@ -24,6 +31,17 @@ pub struct Separate;
 
 impl AlphaState for Separate {
     const STATE: DynamicAlphaState = DynamicAlphaState::Separate;
+}
+
+impl ConvertFromAlphaRaw<Premultiplied> for Separate {
+    #[inline]
+    fn convert_raw(raw: Vec3, alpha: f32) -> Vec3 {
+        if alpha != 0.0 {
+            raw / alpha
+        } else {
+            raw
+        }
+    }
 }
 
 impl fmt::Display for Separate {

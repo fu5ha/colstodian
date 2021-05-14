@@ -202,6 +202,7 @@ use derivative::*;
 /// For more information, see the documentation for the corresponding
 /// dynamic color space (you can figure out the corresponding dynamic color space by looking at the)
 /// implementation of the [`ColorSpace`] trait on a specific color space struct.
+#[rustfmt::skip]
 pub mod spaces;
 pub use spaces::*;
 
@@ -278,13 +279,13 @@ mod tests {
     #[test]
     fn round_trip() {
         let orig = Color::<EncodedSrgb, Display>::new(0.5, 0.5, 0.5);
-        let col: Color<LinearSrgb, Display> = orig.decode();
-        let col: Color<AcesCg, Display> = col.convert_linear();
+        let col: Color<LinearSrgb, Display> = orig.convert();
+        let col: Color<AcesCg, Display> = col.convert();
         let col: Color<AcesCg, Scene> = col.convert_state(|c| c * 5.0);
 
         let col: Color<AcesCg, Display> = col.convert_state(|c| c / 5.0);
-        let col: Color<LinearSrgb, Display> = col.convert_linear();
-        let fin: Color<EncodedSrgb, Display> = col.encode();
+        let col: Color<LinearSrgb, Display> = col.convert();
+        let fin: Color<EncodedSrgb, Display> = col.convert();
 
         assert_eq_eps!(orig, fin, 0.0001);
     }

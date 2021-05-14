@@ -18,6 +18,13 @@ pub struct Color<Spc, St> {
     _pd: PhantomData<(Spc, St)>,
 }
 
+#[cfg(feature = "bytemuck")]
+unsafe impl<Spc, St> bytemuck::Zeroable for Color<Spc, St> {}
+#[cfg(feature = "bytemuck")]
+unsafe impl<Spc, St> bytemuck::TransparentWrapper<Vec3> for Color<Spc, St> {}
+#[cfg(feature = "bytemuck")]
+unsafe impl<Spc: 'static, St: 'static> bytemuck::Pod for Color<Spc, St> {}
+
 impl<Spc: ColorSpace, St: State> fmt::Display for Color<Spc, St> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -36,12 +43,22 @@ impl<Spc: ColorSpace, St: State> fmt::Debug for Color<Spc, St> {
     }
 }
 
-#[cfg(feature = "bytemuck")]
-unsafe impl<Spc, St> bytemuck::Zeroable for Color<Spc, St> {}
-#[cfg(feature = "bytemuck")]
-unsafe impl<Spc, St> bytemuck::TransparentWrapper<Vec3> for Color<Spc, St> {}
-#[cfg(feature = "bytemuck")]
-unsafe impl<Spc: 'static, St: 'static> bytemuck::Pod for Color<Spc, St> {}
+impl<Spc: ColorSpace, St: State> AnyColor for Color<Spc, St> {
+    #[inline]
+    fn space(&self) -> DynamicColorSpace {
+        Spc::SPACE
+    }
+
+    #[inline]
+    fn state(&self) -> DynamicState {
+        St::STATE
+    }
+
+    #[inline]
+    fn raw(&self) -> Vec3 {
+        self.raw
+    }
+}
 
 impl<Spc, St> Color<Spc, St> {
     /// Creates a [`Color`] with the internal color elements `el1`, `el2`, `el3`.
@@ -94,23 +111,6 @@ pub fn acescg<St: State>(r: f32, g: f32, b: f32) -> Color<AcesCg, St> {
     Color::new(r, g, b)
 }
 
-impl<Spc: ColorSpace, St: State> AnyColor for Color<Spc, St> {
-    #[inline]
-    fn space(&self) -> DynamicColorSpace {
-        Spc::SPACE
-    }
-
-    #[inline]
-    fn state(&self) -> DynamicState {
-        St::STATE
-    }
-
-    #[inline]
-    fn raw(&self) -> Vec3 {
-        self.raw
-    }
-}
-
 macro_rules! impl_op_color {
     ($op:ident, $op_func:ident) => {
         impl<Spc: LinearColorSpace, St> $op for Color<Spc, St> {
@@ -148,42 +148,16 @@ impl_op_color!(Div, div);
 impl_op_color_float!(Mul, mul);
 impl_op_color_float!(Div, div);
 
-impl<Spc: ColorSpace> Color<Spc, Display> {
+impl<SrcSpace: ColorSpace, St: State> Color<SrcSpace, St> {
     /// Converts from one color space to another. This is only implemented in the generic case (for any ColorSpace)
     /// for Display-referred colors because non-linear color space transformations are often undefined for values
     /// outside the range [0..1].
-    pub fn convert<DstSpace: ColorSpace>(self) -> Color<DstSpace, Display> {
-        let conversion = kolor::ColorConversion::new(Spc::SPACE, DstSpace::SPACE);
-        Color::from_raw(conversion.convert(self.raw))
-    }
-
-    /// Converts `self` to a [`ColorAlpha`] with specified [`AlphaState`] by adding an alpha component.
-    pub fn with_alpha<A: AlphaState>(self, alpha: f32) -> ColorAlpha<Spc, A> {
-        ColorAlpha::from_raw(self.raw.extend(alpha))
-    }
-}
-
-impl<Spc: NonlinearColorSpace, St: State> Color<Spc, St> {
-    /// Convert `self` into the closest linear color space.
-    pub fn linearize(self) -> Color<Spc::LinearSpace, St> {
-        use kolor::details::{color::TransformFn, transform::ColorTransform};
-        let spc = Spc::SPACE;
-        Color::from_raw(
-            ColorTransform::new(spc.transform_function(), TransformFn::NONE)
-                .unwrap()
-                .apply(self.raw, spc.white_point()),
-        )
-    }
-}
-
-impl<SrcSpace: ColorSpace, St> Color<SrcSpace, St> {
-    /// Converts from a linear color space to another linear color space. This transformation ultimately
-    /// boils down to a single 3x3 matrix * vector3 multiplication. This should be preferred when available
-    /// over the more generic `Color::convert`.
-    pub fn convert_linear<DstSpace: LinearConvertFrom<SrcSpace>>(self) -> Color<DstSpace, St> {
-        let conversion_mat =
-            Mat3::from_cols_array(&<DstSpace as LinearConvertFrom<SrcSpace>>::MATRIX).transpose();
-        Color::from_raw(conversion_mat * self.raw)
+    pub fn convert<DstSpace: ConvertFromRaw<SrcSpace>>(self) -> Color<DstSpace, St> {
+        let mut raw = self.raw;
+        raw = <DstSpace as ConvertFromRaw<SrcSpace>>::src_transform_raw(raw);
+        raw = <DstSpace as ConvertFromRaw<SrcSpace>>::linear_part_raw(raw);
+        raw = <DstSpace as ConvertFromRaw<SrcSpace>>::dst_transform_raw(raw);
+        Color::from_raw(raw)
     }
 
     /// Interprets this color as `DstSpace`. This assumes you have done an external computation/conversion such that this
@@ -192,14 +166,21 @@ impl<SrcSpace: ColorSpace, St> Color<SrcSpace, St> {
         Color::from_raw(self.raw)
     }
 
-    /// Decodes `self` into the specified color space.
-    pub fn decode<DstSpace: DecodeFrom<SrcSpace>>(self) -> Color<DstSpace, St> {
-        Color::from_raw(DstSpace::decode_raw(self.raw))
+    /// Interprets this color as `DstSpace` and `DstState`. This assumes you have done an external computation/conversion such that this
+    /// cast is valid.
+    pub fn cast<DstSpace: ColorSpace, DstSt: State>(self) -> Color<DstSpace, DstSt> {
+        Color::from_raw(self.raw)
     }
+}
 
-    /// Encodes `self` into the specified color space.
-    pub fn encode<DstSpace: EncodeFrom<SrcSpace>>(self) -> Color<DstSpace, St> {
-        Color::from_raw(DstSpace::encode_raw(self.raw))
+impl<SrcSpace: ColorSpace, St: State> Color<SrcSpace, St> {
+    /// Convert `self` into the closest linear color space.
+    ///
+    /// If `self` is already in a linear color space, this is a no-op.
+    pub fn linearize(self) -> Color<SrcSpace::LinearSpace, St> {
+        let mut raw = self.raw;
+        raw = <SrcSpace::LinearSpace as ConvertFromRaw<SrcSpace>>::src_transform_raw(raw);
+        Color::from_raw(raw)
     }
 }
 
@@ -228,8 +209,29 @@ impl<Spc: LinearColorSpace, SrcSt> Color<Spc, SrcSt> {
     }
 }
 
+impl<Spc: LinearColorSpace> Color<Spc, Scene> {
+    /// Tonemap `self` using the `tonemapper`, converting `self` from being
+    /// scene-referred to being display-referred.
+    pub fn tonemap(self, tonemapper: impl Tonemapper) -> Color<Spc, Display> {
+        Color::from_raw(tonemapper.tonemap_raw(self.raw))
+    }
+}
+
+impl<Spc: ColorSpace> Color<Spc, Display> {
+    /// Converts `self` to a [`ColorAlpha`] with [`Separate`] alpha state by adding a component. This is probably what you want.
+    pub fn with_alpha(self, alpha: f32) -> ColorAlpha<Spc, Separate> {
+        ColorAlpha::from_raw(self.raw.extend(alpha))
+    }
+
+    /// Converts `self` to a [`ColorAlpha`] with specified [`AlphaState`] by adding an alpha component. Make sure you choose the
+    /// correct alpha state! If you're not sure, you probably want [`Color::with_alpha`].
+    pub fn with_alpha_state<A: AlphaState>(self, alpha: f32) -> ColorAlpha<Spc, A> {
+        ColorAlpha::from_raw(self.raw.extend(alpha))
+    }
+}
+
 impl<Spc: AsU8Array> Color<Spc, Display> {
-    /// Convert `self` to a `[u8; 3]`. All components of `self` *must* be in range `[0..1]`.
+    /// Convert `self` to a `[u8; 3]`. All components of `self` will be clamped to range `[0..1]`.
     pub fn to_u8(self) -> [u8; 3] {
         fn f32_to_u8(x: f32) -> u8 {
             (x * 255.0).round() as u8
@@ -251,14 +253,6 @@ impl<Spc: AsU8Array> Color<Spc, Display> {
             u8_to_f32(encoded[1]),
             u8_to_f32(encoded[2]),
         )
-    }
-}
-
-impl<Spc: LinearColorSpace> Color<Spc, Scene> {
-    /// Tonemap `self` using the `tonemapper`, converting `self` from being
-    /// scene-referred to being display-referred.
-    pub fn tonemap(self, tonemapper: impl Tonemapper) -> Color<Spc, Display> {
-        Color::from_raw(tonemapper.tonemap_raw(self.raw))
     }
 }
 
