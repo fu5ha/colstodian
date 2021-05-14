@@ -50,7 +50,7 @@ impl fmt::Display for Separate {
     }
 }
 
-/// A dynamic version of a color's alpha state. See docs for [`Alpha`]
+/// A dynamic version of a color's alpha state. See docs for [`AlphaState`]
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub enum DynamicAlphaState {

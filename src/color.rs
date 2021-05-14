@@ -17,49 +17,6 @@ pub struct Color<Spc, St> {
     #[derivative(PartialEq = "ignore")]
     _pd: PhantomData<(Spc, St)>,
 }
-
-#[cfg(feature = "bytemuck")]
-unsafe impl<Spc, St> bytemuck::Zeroable for Color<Spc, St> {}
-#[cfg(feature = "bytemuck")]
-unsafe impl<Spc, St> bytemuck::TransparentWrapper<Vec3> for Color<Spc, St> {}
-#[cfg(feature = "bytemuck")]
-unsafe impl<Spc: 'static, St: 'static> bytemuck::Pod for Color<Spc, St> {}
-
-impl<Spc: ColorSpace, St: State> fmt::Display for Color<Spc, St> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Color<{}, {}>: ({})",
-            Spc::default(),
-            St::default(),
-            self.deref()
-        )
-    }
-}
-
-impl<Spc: ColorSpace, St: State> fmt::Debug for Color<Spc, St> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", *self)
-    }
-}
-
-impl<Spc: ColorSpace, St: State> AnyColor for Color<Spc, St> {
-    #[inline]
-    fn space(&self) -> DynamicColorSpace {
-        Spc::SPACE
-    }
-
-    #[inline]
-    fn state(&self) -> DynamicState {
-        St::STATE
-    }
-
-    #[inline]
-    fn raw(&self) -> Vec3 {
-        self.raw
-    }
-}
-
 impl<Spc, St> Color<Spc, St> {
     /// Creates a [`Color`] with the internal color elements `el1`, `el2`, `el3`.
     #[inline]
@@ -76,12 +33,6 @@ impl<Spc, St> Color<Spc, St> {
         }
     }
 
-    /// Clamp the raw element values of `self` in the range [0..1]
-    #[inline]
-    pub fn saturate(self) -> Self {
-        Self::from_raw(self.raw.min(Vec3::ONE).max(Vec3::ZERO))
-    }
-
     /// Get the maximum element of `self`
     pub fn max_element(self) -> f32 {
         self.raw.max_element()
@@ -93,10 +44,24 @@ impl<Spc, St> Color<Spc, St> {
     }
 }
 
+impl<Spc: WorkingColorSpace, St> Color<Spc, St> {
+    /// Clamp the raw element values of `self` in the range [0..1]
+    #[inline]
+    pub fn saturate(self) -> Self {
+        Self::from_raw(self.raw.min(Vec3::ONE).max(Vec3::ZERO))
+    }
+}
+
 /// Creates a [`Color`] in the [`EncodedSrgb`] color space with components `r`, `g`, and `b`.
 #[inline]
 pub fn srgb(r: f32, g: f32, b: f32) -> Color<EncodedSrgb, Display> {
     Color::new(r, g, b)
+}
+
+/// Creates a [`Color`] in the [`EncodedSrgb`] color space with components `r`, `g`, and `b`.
+#[inline]
+pub fn srgb_u8(r: u8, g: u8, b: u8) -> Color<EncodedSrgb, Display> {
+    Color::from_u8([r, g, b])
 }
 
 /// Creates a [`Color`] in the [`LinearSrgb`] color space in the `St` [State] with components `r`, `g`, and `b`.
@@ -111,47 +76,12 @@ pub fn acescg<St: State>(r: f32, g: f32, b: f32) -> Color<AcesCg, St> {
     Color::new(r, g, b)
 }
 
-macro_rules! impl_op_color {
-    ($op:ident, $op_func:ident) => {
-        impl<Spc: LinearColorSpace, St> $op for Color<Spc, St> {
-            type Output = Color<Spc, St>;
-            fn $op_func(self, rhs: Color<Spc, St>) -> Self::Output {
-                Color::from_raw(self.raw.$op_func(rhs.raw))
-            }
-        }
-    };
-}
-
-macro_rules! impl_op_color_float {
-    ($op:ident, $op_func:ident) => {
-        impl<Spc: LinearColorSpace, St> $op<f32> for Color<Spc, St> {
-            type Output = Color<Spc, St>;
-            fn $op_func(self, rhs: f32) -> Self::Output {
-                Color::from_raw(self.raw.$op_func(rhs))
-            }
-        }
-
-        impl<Spc: LinearColorSpace, St> $op<Color<Spc, St>> for f32 {
-            type Output = Color<Spc, St>;
-            fn $op_func(self, rhs: Color<Spc, St>) -> Self::Output {
-                Color::from_raw(self.$op_func(rhs.raw))
-            }
-        }
-    };
-}
-
-impl_op_color!(Add, add);
-impl_op_color!(Sub, sub);
-impl_op_color!(Mul, mul);
-impl_op_color!(Div, div);
-
-impl_op_color_float!(Mul, mul);
-impl_op_color_float!(Div, div);
-
 impl<SrcSpace: ColorSpace, St: State> Color<SrcSpace, St> {
-    /// Converts from one color space to another. This is only implemented in the generic case (for any ColorSpace)
-    /// for Display-referred colors because non-linear color space transformations are often undefined for values
-    /// outside the range [0..1].
+    /// Converts `self` from one color space to another while retaining the same [`State`].
+    ///
+    /// Be careful when converting between nonlinear color spaces while in [Scene] state
+    /// as the nonlinear transform functions for some color spaces are only defined within
+    /// a specific dynamic range.
     pub fn convert<DstSpace: ConvertFromRaw<SrcSpace>>(self) -> Color<DstSpace, St> {
         let mut raw = self.raw;
         raw = <DstSpace as ConvertFromRaw<SrcSpace>>::src_transform_raw(raw);
@@ -170,6 +100,16 @@ impl<SrcSpace: ColorSpace, St: State> Color<SrcSpace, St> {
     /// cast is valid.
     pub fn cast<DstSpace: ColorSpace, DstSt: State>(self) -> Color<DstSpace, DstSt> {
         Color::from_raw(self.raw)
+    }
+}
+
+impl<SrcSpace: EncodedColorSpace, St: State> Color<SrcSpace, St> {
+    /// Decode `self` into its decoded ([working][WorkingColorSpace]) color space,
+    /// which allows many more operations to be performed.
+    pub fn decode(self) -> Color<SrcSpace::DecodedSpace, St> {
+        let mut raw = self.raw;
+        raw = <SrcSpace::DecodedSpace as ConvertFromRaw<SrcSpace>>::src_transform_raw(raw);
+        Color::from_raw(raw)
     }
 }
 
@@ -256,6 +196,17 @@ impl<Spc: AsU8Array> Color<Spc, Display> {
     }
 }
 
+impl<SrcSpace, DstSpace, St> ConvertTo<Color<DstSpace, St>> for Color<SrcSpace, St>
+where
+    DstSpace: ConvertFromRaw<SrcSpace>,
+    SrcSpace: ColorSpace,
+    St: State,
+{
+    fn convert(self) -> Color<DstSpace, St> {
+        self.convert()
+    }
+}
+
 impl<Spc: ColorSpace, St: State> From<Color<Spc, St>> for DynamicColor {
     fn from(color: Color<Spc, St>) -> DynamicColor {
         color.dynamic()
@@ -270,6 +221,95 @@ impl<Spc: ColorSpace, St: State> From<Color<Spc, St>> for kolor::Color {
         }
     }
 }
+
+#[cfg(feature = "bytemuck")]
+unsafe impl<Spc, St> bytemuck::Zeroable for Color<Spc, St> {}
+#[cfg(feature = "bytemuck")]
+unsafe impl<Spc, St> bytemuck::TransparentWrapper<Vec3> for Color<Spc, St> {}
+#[cfg(feature = "bytemuck")]
+unsafe impl<Spc: 'static, St: 'static> bytemuck::Pod for Color<Spc, St> {}
+
+impl<Spc, St> fmt::Display for Color<Spc, St>
+where
+    Spc: ColorSpace,
+    St: State,
+    Color<Spc, St>: Deref<Target = Spc::ComponentStruct>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Color<{}, {}>: ({})",
+            Spc::default(),
+            St::default(),
+            self.deref()
+        )
+    }
+}
+
+impl<Spc, St> fmt::Debug for Color<Spc, St>
+where
+    Spc: ColorSpace,
+    St: State,
+    Color<Spc, St>: Deref<Target = Spc::ComponentStruct>,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", *self)
+    }
+}
+
+impl<Spc: ColorSpace, St: State> AnyColor for Color<Spc, St> {
+    #[inline]
+    fn space(&self) -> DynamicColorSpace {
+        Spc::SPACE
+    }
+
+    #[inline]
+    fn state(&self) -> DynamicState {
+        St::STATE
+    }
+
+    #[inline]
+    fn raw(&self) -> Vec3 {
+        self.raw
+    }
+}
+
+macro_rules! impl_op_color {
+    ($op:ident, $op_func:ident) => {
+        impl<Spc: WorkingColorSpace, St> $op for Color<Spc, St> {
+            type Output = Color<Spc, St>;
+            fn $op_func(self, rhs: Color<Spc, St>) -> Self::Output {
+                Color::from_raw(self.raw.$op_func(rhs.raw))
+            }
+        }
+    };
+}
+
+macro_rules! impl_op_color_float {
+    ($op:ident, $op_func:ident) => {
+        impl<Spc: WorkingColorSpace, St> $op<f32> for Color<Spc, St> {
+            type Output = Color<Spc, St>;
+            fn $op_func(self, rhs: f32) -> Self::Output {
+                Color::from_raw(self.raw.$op_func(rhs))
+            }
+        }
+
+        impl<Spc: WorkingColorSpace, St> $op<Color<Spc, St>> for f32 {
+            type Output = Color<Spc, St>;
+            fn $op_func(self, rhs: Color<Spc, St>) -> Self::Output {
+                Color::from_raw(self.$op_func(rhs.raw))
+            }
+        }
+    };
+}
+
+impl_op_color!(Add, add);
+impl_op_color!(Sub, sub);
+impl_op_color!(Mul, mul);
+impl_op_color!(Div, div);
+
+impl_op_color_float!(Mul, mul);
+impl_op_color_float!(Div, div);
 
 /// A dynamic color, with its Space and State defined
 /// as data. This is mostly useful for (de)serialization.

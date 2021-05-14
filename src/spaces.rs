@@ -28,6 +28,9 @@ macro_rules! impl_color_space_inner {
 
             /// The closest linear color space to this space.
             type LinearSpace = $lin_space;
+
+            /// The 'bag of components' that this color space uses.
+            type ComponentStruct = $derefs_to;
         }
 
         impl Default for $space {
@@ -43,7 +46,7 @@ macro_rules! impl_color_space_inner {
         }
 
         impl<St> Deref for Color<$space, St> {
-            type Target = $derefs_to;
+            type Target = <$space as ColorSpace>::ComponentStruct;
 
             /// Test
             #[inline(always)]
@@ -60,7 +63,7 @@ macro_rules! impl_color_space_inner {
         }
 
         impl<A> Deref for ColorAlpha<$space, A> {
-            type Target = ColAlpha<$derefs_to>;
+            type Target = ColAlpha<<$space as ColorSpace>::ComponentStruct>;
 
             /// Test
             #[inline(always)]
@@ -94,6 +97,29 @@ macro_rules! impl_color_space {
         }
 
         impl NonlinearColorSpace for $space {}
+
+        impl WorkingColorSpace for $space {}
+    };
+    {
+        $space:ident is $dynamic_space:ident and Nonlinear,
+        LinearSpace is $lin_space:ident,
+        Derefs as $derefs_to:ident,
+        Displays as $display:expr,
+        Encodes from $decoded:ident,
+    } => {
+        impl_color_space_inner! {
+            $space is $dynamic_space,
+            LinearSpace is $lin_space,
+            Derefs as $derefs_to,
+            Displays as $display,
+        }
+
+        impl NonlinearColorSpace for $space {}
+
+        impl EncodedColorSpace for $space {
+            type DecodedSpace = $decoded;
+        }
+
     };
     {
         $space:ident is $dynamic_space:ident and Linear,
@@ -108,6 +134,8 @@ macro_rules! impl_color_space {
         }
 
         impl LinearColorSpace for $space {}
+
+        impl WorkingColorSpace for $space {}
     };
 }
 
@@ -299,6 +327,7 @@ impl_color_space! {
     LinearSpace is LinearSrgb,
     Derefs as Rgb,
     Displays as "Encoded sRGB",
+    Encodes from LinearSrgb,
 }
 
 impl AsU8Array for EncodedSrgb {}
@@ -374,6 +403,7 @@ impl_color_space! {
     LinearSpace is Bt2020,
     Derefs as Rgb,
     Displays as "Encoded BT.2020",
+    Encodes from Bt2020,
 }
 
 impl_conversion!(EncodedBt2020 to LinearSrgb        => bt601_oetf_inverse, BT_2020_D65_TO_BT_709_D65, None);
@@ -399,9 +429,10 @@ pub struct EncodedBt2100PQ;
 
 impl_color_space! {
     EncodedBt2100PQ is ENCODED_BT_2100_PQ and Nonlinear,
-    LinearSpace is Bt2020,
+    LinearSpace is Bt2100,
     Derefs as Rgb,
     Displays as "Encoded BT.2100 (PQ)",
+    Encodes from Bt2100,
 }
 
 impl_conversion!(EncodedBt2100PQ to LinearSrgb        => ST_2084_PQ_eotf, BT_2020_D65_TO_BT_709_D65, None);
@@ -517,7 +548,7 @@ impl_conversion!(AcesCg to EncodedBt2100PQ   => None, AP1_D60_TO_BT_2020_D65, ST
 impl_conversion!(AcesCg to EncodedDisplayP3  => None, AP1_D60_TO_P3_D65, sRGB_oetf);
 impl_conversion!(AcesCg to EncodedSrgb       => None, AP1_D60_TO_BT_709_D65, sRGB_oetf);
 
-/// A type representing the [ACEScg color space encoded with the sRGB transfer functions][dynamic_spaces::ENCODED_ACESCG_SRGB].
+/// A type representing the [ACEScg color space encoded with the sRGB transfer functions][dynamic_spaces::ENCODED_ACES_CG_SRGB].
 ///
 /// This is useful to take advantage of many GPUs' hardware support for encoding and decoding using the
 /// sRGB transfer functions. Using the sRGB transfer functions to encode ACEScg data is useful when trying to
@@ -530,6 +561,7 @@ impl_color_space! {
     LinearSpace is AcesCg,
     Derefs as Rgb,
     Displays as "Encoded ACEScg (sRGB)",
+    Encodes from AcesCg,
 }
 
 impl_conversion!(EncodedAcesCgSrgb to LinearSrgb        => sRGB_eotf, AP1_D60_TO_BT_709_D65, None);
@@ -605,6 +637,7 @@ impl_color_space! {
     LinearSpace is DisplayP3,
     Derefs as Rgb,
     Displays as "Encoded Display P3",
+    Encodes from DisplayP3,
 }
 
 impl_conversion!(EncodedDisplayP3 to LinearSrgb        => sRGB_eotf, P3_D65_TO_BT_709_D65, None);

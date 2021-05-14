@@ -7,8 +7,14 @@ use core::fmt;
 /// A type that implements ColorSpace represents a specific color space. See the documentation
 /// of [`DynamicColorSpace`] for more information about what a color space is.
 pub trait ColorSpace: Default + fmt::Display {
+    /// The [`DynamicColorSpace`] that this type represents.
     const SPACE: DynamicColorSpace;
+
+    /// The closest linear color space to this space.
     type LinearSpace: LinearColorSpace + ConvertFromRaw<Self>;
+
+    /// The 'bag of components' that this color space uses.
+    type ComponentStruct: Clone + Copy + fmt::Display;
 }
 
 /// Marks a type as representing a linear color space.
@@ -16,6 +22,19 @@ pub trait LinearColorSpace: ColorSpace {}
 
 /// Marks a type as representing a nonlinear color space.
 pub trait NonlinearColorSpace: ColorSpace {}
+
+/// Marks a type as representing an encoded color space.
+///
+/// A color in an [`EncodedColorSpace`] has few operations
+/// that can be performed on it other than just converting it
+/// to a [`WorkingColorSpace`]
+pub trait EncodedColorSpace: ColorSpace {
+    type DecodedSpace: WorkingColorSpace + ConvertFromRaw<Self>;
+}
+
+/// Marks a type as representing a color space that is not [encoded][EncodedColorSpace] and is therefore
+/// able to have many more operations performed on it.
+pub trait WorkingColorSpace: ColorSpace {}
 
 /// Performs the raw conversion from the [`ColorSpace`] represented by `SrcSpc` to
 /// the [`ColorSpace`] represented by `Self` in three concrete steps, each of which
@@ -26,20 +45,60 @@ pub trait ConvertFromRaw<SrcSpace: ColorSpace>: ColorSpace {
     fn dst_transform_raw(color: Vec3) -> Vec3;
 }
 
-/// A type that implements this trait is a color space for which a single nonlinear
-/// transform function exists to decode a color from `SrcSpace` into `Self`. For example,
-/// [`LinearSrgb`] implements [`DecodeFrom<EncodedSrgb>`].
-pub trait DecodeFrom<SrcSpc> {
-    /// Decode the raw color from `SrcSpace` into the space represented by `Self`
-    fn decode_raw(color: Vec3) -> Vec3;
+/// The complement of [`ConvertFromRaw`].
+///
+/// Performs the raw conversion from the [`ColorSpace`] represented by `Self` to
+/// the [`ColorSpace`] represented by `DstSpace` in three concrete steps, each of which
+/// may do some work or be a no-op.
+///
+/// This is automatically implemented for all types that implement [`ConvertFromRaw`],
+/// much like how the [From] and [Into] traits work, where [From] gets you [Into] for free.
+pub trait ConvertToRaw<DstSpace: ColorSpace>: ColorSpace {
+    fn src_transform_raw(color: Vec3) -> Vec3;
+    fn linear_part_raw(color: Vec3) -> Vec3;
+    fn dst_transform_raw(color: Vec3) -> Vec3;
 }
 
-/// A type that implements this trait is a color space for which a single nonlinear
-/// transform function exists to encode a color from `SrcSpace` into `Self`. For example,
-/// [`EncodedSrgb`] implements [`EncodeFrom<LinearSrgb>`].
-pub trait EncodeFrom<SrcSpace> {
-    /// Encode the raw color from `SrcSpace` into the space represented by `Self`
-    fn encode_raw(color: Vec3) -> Vec3;
+impl<SrcSpace: ColorSpace, DstSpace: ConvertFromRaw<SrcSpace>> ConvertToRaw<DstSpace> for SrcSpace {
+    #[inline]
+    fn src_transform_raw(color: Vec3) -> Vec3 {
+        <DstSpace as ConvertFromRaw<SrcSpace>>::src_transform_raw(color)
+    }
+
+    #[inline]
+    fn linear_part_raw(color: Vec3) -> Vec3 {
+        <DstSpace as ConvertFromRaw<SrcSpace>>::linear_part_raw(color)
+    }
+
+    #[inline]
+    fn dst_transform_raw(color: Vec3) -> Vec3 {
+        <DstSpace as ConvertFromRaw<SrcSpace>>::dst_transform_raw(color)
+    }
+}
+
+/// A trait meant to be used as a replacement for [`Into`] in situations where you want
+/// to bound a type as being able to be converted into a specific type of color.
+/// Because of how `colstodian` works and how [`From`]/[`Into`] are implemented, we can't use them directly
+/// for this purpose.
+///
+/// # Example
+///
+/// ```rust
+/// use colstodian::*;
+///
+/// fn tint_color(input_color: impl ConvertTo<Color<AcesCg, Display>>) -> Color<AcesCg, Display> {
+///     let color = input_color.convert();
+///     let tint: Color<AcesCg, Display> = Color::new(0.5, 0.8, 0.4);
+///     color * tint
+/// }
+///
+/// let color = color::srgb_u8(225, 200, 86);
+/// let tinted: Color<EncodedSrgb, Display> = tint_color(color).convert();
+///
+/// println!("Pre-tint: {}, Post-tint: {}", color, tinted);
+/// ```
+pub trait ConvertTo<T> {
+    fn convert(self) -> T;
 }
 
 /// A type that implements this trait can be converted directly to and from
@@ -86,6 +145,8 @@ where
     const STATE: DynamicAlphaState;
 }
 
+/// Performs the conversion from [alpha state][AlphaState] `SrcAlphaState` into `Self`
+/// on a raw color.
 pub trait ConvertFromAlphaRaw<SrcAlphaState> {
     fn convert_raw(raw: Vec3, alpha: f32) -> Vec3;
 }
@@ -97,6 +158,11 @@ impl<T> ConvertFromAlphaRaw<T> for T {
     }
 }
 
+/// The complement of [`ConvertFromAlphaRaw`]. Performs the conversion from [alpha state][AlphaState] `Self` into `DstAlphaState`
+/// on a raw color.
+///
+/// This is automatically implemented for all types that implement [`ConvertFromAlphaRaw`],
+/// much like how the [From] and [Into] traits work, where [From] gets you [Into] for free.
 pub trait ConvertToAlphaRaw<DstAlphaState> {
     fn convert_raw(raw: Vec3, alpha: f32) -> Vec3;
 }

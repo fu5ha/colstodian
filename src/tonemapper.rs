@@ -8,7 +8,7 @@ pub trait Tonemapper {
 
 /// Parameters for the [`LottesTonemapper`]
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct LottesTonemaperParams {
+pub struct LottesTonemapperParams {
     /// Controls the strength of the toe and shoulder rolloff
     pub contrast: f32,
     /// Controls the shape of the shoulder
@@ -27,7 +27,7 @@ pub struct LottesTonemaperParams {
     pub cross_saturation: f32,
 }
 
-impl Default for LottesTonemaperParams {
+impl Default for LottesTonemapperParams {
     fn default() -> Self {
         Self {
             contrast: 2.35,
@@ -59,8 +59,8 @@ pub struct LottesTonemapper {
 
 impl LottesTonemapper {
     /// Create a new [`LottesTonemapper`] with the given parameters.
-    pub fn new(params: LottesTonemaperParams) -> Self {
-        let LottesTonemaperParams {
+    pub fn new(params: LottesTonemapperParams) -> Self {
+        let LottesTonemapperParams {
             contrast,
             shoulder,
             max_luminance,
