@@ -253,7 +253,7 @@
 //! Now we need to do the opposite of what we did before and map the infinite dynamic range of a
 //! scene-referred color outputted by the renderer to the finite dynamic range which can be displayed
 //! on a display. For an output display which is "SDR" (i.e. not an HDR-enabled TV or monitor), a fairly
-//! aggressive S-curve style tonemap is a good option. We provide one in the form of the [`LottesTonemapper`],
+//! aggressive S-curve style tonemap is a good option. We provide one in the form of the [`LottesTonemapper`][tonemapper::LottesTonemapper],
 //! which is a tonemapper inspired by [a talk given by AMD's Timothy Lottes](https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day).
 //! See the documentation for more information on why it is a good choice.
 //!

@@ -20,7 +20,7 @@ pub enum DowncastError {
     MismatchedAlphaState(DynamicAlphaState, DynamicAlphaState),
 }
 
-/// An error that occurred when performing a conversion on a [`DynamicColor`]
+/// An error that occurred when performing a conversion on a [`DynamicColor`][crate::DynamicColor]
 #[derive(thiserror::Error, Debug)]
 pub enum DynamicConversionError {
     #[error("tried to convert from or to a nonlinear color space while in scene-referred state. current: {0:#?}, requested: {1:#?}")]

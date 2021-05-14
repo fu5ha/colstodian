@@ -127,8 +127,8 @@ pub trait AsU8Array {}
 ///
 /// It is a meaningful abstraction to categorize color spaces by the “direction” of this relationship to real world
 /// quantities, which we refer to as State. Colors which are defined in relation to display
-/// characteristic are called [`Display`]-referred, while color spaces which are defined in relation to input
-/// devices (scenes) are [`Scene`]-referred.
+/// characteristic are called [`Display`][crate::Display]-referred, while color spaces which are defined in relation to input
+/// devices (scenes) are [`Scene`][crate::Scene]-referred.
 pub trait State: Default + fmt::Display {
     const STATE: DynamicState;
 }
