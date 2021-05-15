@@ -21,24 +21,24 @@ impl<T: fmt::Display> fmt::Display for ColAlpha<T> {
     }
 }
 
-#[cfg(feature = "bytemuck")]
-macro_rules! impl_bytemuck_col_alpha {
+macro_rules! impl_bytemuck {
     ($($inner:ident),+) => {
         $(
+            unsafe impl bytemuck::Zeroable for $inner {}
+            unsafe impl bytemuck::Pod for $inner {}
+
             unsafe impl bytemuck::Zeroable for ColAlpha<$inner> {}
             unsafe impl bytemuck::Pod for ColAlpha<$inner> {}
         )+
     }
 }
 
-#[cfg(feature = "bytemuck")]
-impl_bytemuck_col_alpha!(Rgb, ICtCp, Xyz, Lab, LCh);
+impl_bytemuck!(Rgb, ICtCp, Xyz, Lab, LCh);
 
 /// A bag of components with names R, G, B. Some `Color`s with RGB color spaces
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
 #[repr(C)]
 #[derive(Clone, Copy)]
-#[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 pub struct Rgb {
     pub r: f32,
     pub g: f32,
@@ -55,7 +55,6 @@ impl fmt::Display for Rgb {
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
 #[repr(C)]
 #[derive(Clone, Copy)]
-#[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 pub struct ICtCp {
     pub i: f32,
     pub ct: f32,
@@ -72,7 +71,6 @@ impl fmt::Display for ICtCp {
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
 #[repr(C)]
 #[derive(Clone, Copy)]
-#[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 pub struct Xyz {
     pub x: f32,
     pub y: f32,
@@ -90,7 +88,6 @@ impl fmt::Display for Xyz {
 /// access their components with dot-syntax.
 #[repr(C)]
 #[derive(Clone, Copy)]
-#[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 pub struct Lab {
     pub l: f32,
     pub a: f32,
@@ -108,7 +105,6 @@ impl fmt::Display for Lab {
 /// access their components with dot-syntax.
 #[repr(C)]
 #[derive(Clone, Copy)]
-#[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 pub struct LCh {
     pub l: f32,
     pub c: f32,

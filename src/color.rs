@@ -6,8 +6,9 @@ use crate::{
     LinearSrgb, Scene, Separate,
 };
 
-use derivative::*;
 use glam::Vec3;
+#[cfg(all(not(feature = "std"), feature = "libm"))]
+use num_traits::Float;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -22,12 +23,9 @@ pub use color_alpha::{linear_srgba, srgba, srgba_u8, ColorAlpha, DynamicColorAlp
 ///
 /// See crate-level docs as well as [`ColorSpace`] and [`State`] for more.
 #[repr(transparent)]
-#[derive(Derivative)]
-#[derivative(Clone, Copy, PartialEq)]
 pub struct Color<Spc, St> {
     /// The raw values of the color. Be careful when modifying this directly.
     pub raw: Vec3,
-    #[derivative(PartialEq = "ignore")]
     _pd: PhantomData<(Spc, St)>,
 }
 
@@ -102,6 +100,26 @@ impl<SrcSpace: ColorSpace, St: State> Color<SrcSpace, St> {
         raw = <DstSpace as ConvertFromRaw<SrcSpace>>::linear_part_raw(raw);
         raw = <DstSpace as ConvertFromRaw<SrcSpace>>::dst_transform_raw(raw);
         Color::from_raw(raw)
+    }
+
+    /// Converts `self` from one color space to another while retaining the same [`State`].
+    ///
+    /// This works the same as [`convert`][Color::convert] except there is only one type parameter, the
+    /// "[Query][ColorConversionQuery]".
+    ///
+    /// The query is meant to be one of:
+    /// * A [`ColorSpace`]
+    /// * A [`Color`] (in which case it will be converted to that color's space).
+    ///
+    /// This query is slightly more generic than the ones on [`convert`][ColorAlpha::convert], which
+    /// means that the Rust type system is usually not able to infer the query without you explicitly giving one.
+    ///
+    /// This can be useful in conjunction with defined type aliases for predefined [`Color`] types.
+    pub fn convert_to<Query>(self) -> Color<Query::DstSpace, St>
+    where
+        Query: ColorConversionQuery<SrcSpace, St>,
+    {
+        self.convert::<Query::DstSpace>()
     }
 
     /// Interprets this color as `DstSpace`. This assumes you have done an external computation/conversion such that this
@@ -236,11 +254,22 @@ impl<Spc: ColorSpace, St: State> From<Color<Spc, St>> for kolor::Color {
     }
 }
 
-#[cfg(feature = "bytemuck")]
+impl<Spc, St> Copy for Color<Spc, St> {}
+
+impl<Spc, St> Clone for Color<Spc, St> {
+    fn clone(&self) -> Color<Spc, St> {
+        *self
+    }
+}
+
+impl<Spc, St> PartialEq for Color<Spc, St> {
+    fn eq(&self, other: &Color<Spc, St>) -> bool {
+        self.raw == other.raw
+    }
+}
+
 unsafe impl<Spc, St> bytemuck::Zeroable for Color<Spc, St> {}
-#[cfg(feature = "bytemuck")]
 unsafe impl<Spc, St> bytemuck::TransparentWrapper<Vec3> for Color<Spc, St> {}
-#[cfg(feature = "bytemuck")]
 unsafe impl<Spc: 'static, St: 'static> bytemuck::Pod for Color<Spc, St> {}
 
 impl<Spc, St> fmt::Display for Color<Spc, St>

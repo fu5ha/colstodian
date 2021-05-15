@@ -122,7 +122,8 @@
 //! let blended = lerp(oklab1..=oklab2, 0.5); // Blend half way between the two colors
 //! ```
 //!
-//! This is also the first time we see the [`convert`][Color::convert] method, which we'll be using
+//! This is also the first time we see the [`convert`][Color::convert] method, which we'll be using,
+//! along with its sibling [`convert_to`][Color::convert_to],
 //! to do most of our conversions. You can use this to do pretty much any conversion you like, so long
 //! as you stay within the same [State]. See the docs of that method for more information. Generally, you'll
 //! want to convert the color to some output color space before actually using it. It's quite common to use
@@ -142,13 +143,42 @@
 //! let output_u8: [u8; 3] = output.to_u8();
 //! ```
 //!
-//! Also note that you can break out of the restrictions imposed by the type system
+//! Here we can also see an example of where [`convert_to`][Color::convert_to] may be preferrable over
+//! [`convert`][Color::convert]. Notice how we are using the type [`Color<EncodedSrgb, Display>`] quite
+//! often? You might want to create a type alias for this type called, for example, `Asset`. Wouldn't it
+//! be convenient to also be able to `convert` to a type alias of [`Color`]? Well, with
+//! [`convert_to`][Color::convert_to], you can! This is particularly useful when you don't want to
+//! bind the output to a variable directly, so you can't take advantage of type inference and
+//! need to use the turbofish operator. For example, let's rewrite the previous blending example:
+//!
+//! ```rust
+//! # use colstodian::*;
+//! // You could have these defined and used throughout your codebase.
+//! type Perceptual = Color<Oklab, Display>;
+//! type Srgb = Color<EncodedSrgb, Display>;
+//!
+//! let color_1 = color::srgb_u8(128, 12, 57);
+//! let color_2 = color::srgb_u8(25, 35, 68);
+//!
+//! let blended_u8: [u8; 3] = lerp(
+//!     color_1.convert_to::<Perceptual>()..=color_2.convert_to::<Perceptual>(),
+//!     0.5
+//! ).convert_to::<Srgb>().to_u8();
+//! ```
+//!
+//! [`convert_to`][Color::convert_to] can also take a [`ColorSpace`] as a Query directly. However,
+//! because it's more generic than [`convert`][Color::convert], Rust's type system will often not
+//! be able to infer the type of Query, for example annotating a type as being a specific [`Color`]
+//! type and then calling `other_color.convert_to()` will give you a type annotation needed error.
+//!
+//! Going back to what you can and cannot do with different [`Color`] types,
+//! note that you can break out of the restrictions imposed by the type system
 //! or otherwise get the raw color by accessing `color.raw`:
 //!
 //! ```rust
 //! # use colstodian::*;
 //! let mut encoded_color = color::srgb_u8(127, 127, 127);
-//! encoded_color.raw *= 0.5; // This works!
+//! encoded_color.raw *= 0.5; // This works! But be careful that you know what you're doing.
 //! ```
 //!
 //! You can also access the components of a color by that component's name. For example,
@@ -385,7 +415,7 @@ mod tests {
                         // borrow is initialized even before the values are compared, leading to a
                         // noticeable slow down.
                         panic!(
-                            r#"assertion failed: `(left ~= right with error {})`
+                            r#"assertion failed: `(left ~= right with epsilon {})`
     left: `{:?}`,
     right: `{:?}`"#,
                             $eps, &*left_val, &*right_val
@@ -399,7 +429,7 @@ mod tests {
     #[test]
     fn basic() {
         let orig = Color::<EncodedSrgb, Display>::new(0.5, 0.5, 0.5);
-        let col: Color<LinearSrgb, Display> = orig.convert();
+        let col: Color<LinearSrgb, Display> = orig.convert::<LinearSrgb>();
         let col: Color<AcesCg, Display> = col.convert();
         let oklab = col.convert::<Oklab>();
 

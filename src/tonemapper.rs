@@ -1,4 +1,6 @@
 use glam::Vec3;
+#[cfg(all(not(feature = "std"), feature = "libm"))]
+use num_traits::Float;
 
 /// Performs tonemapping on a given input color.
 pub trait Tonemapper {
@@ -27,6 +29,9 @@ pub struct LottesTonemapperParams {
     pub cross_saturation: f32,
 }
 
+unsafe impl bytemuck::Pod for LottesTonemapperParams {}
+unsafe impl bytemuck::Zeroable for LottesTonemapperParams {}
+
 impl Default for LottesTonemapperParams {
     fn default() -> Self {
         Self {
@@ -46,7 +51,6 @@ impl Default for LottesTonemapperParams {
 ///and associated slides <https://gpuopen.com/wp-content/uploads/2016/03/GdcVdrLottes.pdf>
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "bytemuck", derive(bytemuck::Pod, bytemuck::Zeroable))]
 pub struct LottesTonemapper {
     a: f32,
     b: f32,
@@ -56,6 +60,9 @@ pub struct LottesTonemapper {
     saturation: f32,
     cross_saturation: f32,
 }
+
+unsafe impl bytemuck::Pod for LottesTonemapper {}
+unsafe impl bytemuck::Zeroable for LottesTonemapper {}
 
 impl LottesTonemapper {
     /// Create a new [`LottesTonemapper`] with the given parameters.

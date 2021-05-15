@@ -1,5 +1,5 @@
 use crate::{
-    ColorSpace, Color, ColorAlpha,
+    ColorSpace, Color, ColorAlpha, Display, Separate, Premultiplied,
     component_structs::{Rgb, ICtCp, ColAlpha, LCh, Lab, Xyz},
     traits::*
 };
@@ -25,6 +25,7 @@ pub mod dynamic_spaces {
 macro_rules! impl_color_space_inner {
     {
         $space:ident is $dynamic_space:ident,
+        $(cint is $cint_ty:ident,)?
         LinearSpace is $lin_space:ident,
         Derefs as $derefs_to:ident,
         Displays as $display:expr,
@@ -38,6 +39,25 @@ macro_rules! impl_color_space_inner {
 
             /// The 'bag of components' that this color space uses.
             type ComponentStruct = $derefs_to;
+        }
+
+        impl<SrcSpace, St> ColorConversionQuery<SrcSpace, St> for $space
+        where
+            SrcSpace: ColorSpace,
+            Self: ConvertFromRaw<SrcSpace>,
+            St: State,
+        {
+            type DstSpace = Self;
+        }
+
+        impl<SrcSpace, SrcAlpha> ColorAlphaConversionQuery<SrcSpace, SrcAlpha> for $space
+        where
+            SrcSpace: ColorSpace,
+            Self: ConvertFromRaw<SrcSpace>,
+            SrcAlpha: AlphaState,
+        {
+            type DstSpace = Self;
+            type DstAlpha = SrcAlpha;
         }
 
         impl Default for $space {
@@ -86,18 +106,67 @@ macro_rules! impl_color_space_inner {
             }
         }
 
+        $(impl From<cint::$cint_ty<f32>> for Color<$space, Display> {
+            fn from(color: cint::$cint_ty<f32>) -> Color<$space, Display> {
+                bytemuck::cast(color)
+            }
+        }
+
+        impl From<Color<$space, Display>> for cint::$cint_ty<f32> {
+            fn from(color: Color<$space, Display>) -> cint::$cint_ty<f32> {
+                bytemuck::cast(color)
+            }
+        }
+
+        impl From<cint::Alpha<cint::$cint_ty<f32>>> for ColorAlpha<$space, Separate> {
+            fn from(color: cint::Alpha<cint::$cint_ty<f32>>) -> ColorAlpha<$space, Separate> {
+                bytemuck::cast(color)
+            }
+        }
+
+        impl From<ColorAlpha<$space, Separate>> for cint::Alpha<cint::$cint_ty<f32>> {
+            fn from(color: ColorAlpha<$space, Separate>) -> cint::Alpha<cint::$cint_ty<f32>> {
+                bytemuck::cast(color)
+            }
+        }
+
+        impl From<cint::PremultipliedAlpha<cint::$cint_ty<f32>>> for ColorAlpha<$space, Premultiplied> {
+            fn from(color: cint::PremultipliedAlpha<cint::$cint_ty<f32>>) -> ColorAlpha<$space, Premultiplied> {
+                bytemuck::cast(color)
+            }
+        }
+
+        impl From<ColorAlpha<$space, Premultiplied>> for cint::PremultipliedAlpha<cint::$cint_ty<f32>> {
+            fn from(color: ColorAlpha<$space, Premultiplied>) -> cint::PremultipliedAlpha<cint::$cint_ty<f32>> {
+                bytemuck::cast(color)
+            }
+        }
+
+        impl cint::ColorInterop for Color<$space, Display> {
+            type CintTy = cint::$cint_ty<f32>;
+        }
+
+        impl cint::ColorInterop for ColorAlpha<$space, Separate> {
+            type CintTy = cint::Alpha<cint::$cint_ty<f32>>;
+        }
+
+        impl cint::ColorInterop for ColorAlpha<$space, Premultiplied> {
+            type CintTy = cint::PremultipliedAlpha<cint::$cint_ty<f32>>;
+        })?
     };
 }
 
 macro_rules! impl_color_space {
     {
         $space:ident is $dynamic_space:ident and Nonlinear,
+        $(cint is $cint_ty:ident,)?
         LinearSpace is $lin_space:ident,
         Derefs as $derefs_to:ident,
         Displays as $display:expr,
     } => {
         impl_color_space_inner! {
             $space is $dynamic_space,
+            $(cint is $cint_ty,)?
             LinearSpace is $lin_space,
             Derefs as $derefs_to,
             Displays as $display,
@@ -109,6 +178,7 @@ macro_rules! impl_color_space {
     };
     {
         $space:ident is $dynamic_space:ident and Nonlinear,
+        $(cint is $cint_ty:ident,)?
         LinearSpace is $lin_space:ident,
         Derefs as $derefs_to:ident,
         Displays as $display:expr,
@@ -116,6 +186,7 @@ macro_rules! impl_color_space {
     } => {
         impl_color_space_inner! {
             $space is $dynamic_space,
+            $(cint is $cint_ty,)?
             LinearSpace is $lin_space,
             Derefs as $derefs_to,
             Displays as $display,
@@ -130,11 +201,13 @@ macro_rules! impl_color_space {
     };
     {
         $space:ident is $dynamic_space:ident and Linear,
+        $(cint is $cint_ty:ident,)?
         Derefs as $derefs_to:ident,
         Displays as $display:expr,
     } => {
         impl_color_space_inner! {
             $space is $dynamic_space,
+            $(cint is $cint_ty,)?
             LinearSpace is $space,
             Derefs as $derefs_to,
             Displays as $display,
@@ -285,6 +358,48 @@ macro_rules! impl_conversion {
     };
 }
 
+macro_rules! impl_as_u8_array {
+    ($space:ident: $cint_ty:ident) => {
+        impl AsU8Array for $space {}
+
+        impl From<cint::$cint_ty<u8>> for Color<$space, Display> {
+            fn from(col: cint::$cint_ty<u8>) -> Color<$space, Display> {
+                Color::from_u8(col.into())
+            }
+        }
+
+        impl From<Color<$space, Display>> for cint::$cint_ty<u8> {
+            fn from(col: Color<$space, Display>) -> cint::$cint_ty<u8> {
+                col.to_u8().into()
+            }
+        }
+
+        impl From<cint::Alpha<cint::$cint_ty<u8>>> for ColorAlpha<$space, Separate> {
+            fn from(col: cint::Alpha<cint::$cint_ty<u8>>) -> ColorAlpha<$space, Separate> {
+                ColorAlpha::from_u8(col.into())
+            }
+        }
+
+        impl From<ColorAlpha<$space, Separate>> for cint::Alpha<cint::$cint_ty<u8>> {
+            fn from(col: ColorAlpha<$space, Separate>) -> cint::Alpha<cint::$cint_ty<u8>> {
+                col.to_u8().into()
+            }
+        }
+
+        impl From<cint::PremultipliedAlpha<cint::$cint_ty<u8>>> for ColorAlpha<$space, Premultiplied> {
+            fn from(col: cint::PremultipliedAlpha<cint::$cint_ty<u8>>) -> ColorAlpha<$space, Premultiplied> {
+                ColorAlpha::from_u8(col.into())
+            }
+        }
+
+        impl From<ColorAlpha<$space, Premultiplied>> for cint::PremultipliedAlpha<cint::$cint_ty<u8>> {
+            fn from(col: ColorAlpha<$space, Premultiplied>) -> cint::PremultipliedAlpha<cint::$cint_ty<u8>> {
+                col.to_u8().into()
+            }
+        }
+    }
+}
+
 /* Canonical conversion template
 impl_conversion!(SPACENAME to LinearSrgb        => SPACE_EOTF, PRIMARIES_WHITEPOINT_TO_BT_709_D65, None);
 impl_conversion!(SPACENAME to AcesCg            => SPACE_EOTF, PRIMARIES_WHITEPOINT_TO_AP1_D60, None);
@@ -307,6 +422,7 @@ pub struct LinearSrgb;
 
 impl_color_space! {
     LinearSrgb is LINEAR_SRGB and Linear,
+    cint is LinearSrgb,
     Derefs as Rgb,
     Displays as "Linear sRGB",
 }
@@ -315,7 +431,7 @@ impl_conversion!(LinearSrgb to LinearSrgb        => None, None, None);
 impl_conversion!(LinearSrgb to AcesCg            => None, BT_709_D65_TO_AP1_D60, None);
 impl_conversion!(LinearSrgb to Aces2065          => None, BT_709_D65_TO_AP0_D60, None);
 impl_conversion!(LinearSrgb to DisplayP3         => None, BT_709_D65_TO_P3_D65, None);
-impl_conversion!(LinearSrgb to CieXyz            => None, BT_709_D65_TO_CIE_XYZ_D65, None);
+impl_conversion!(LinearSrgb to CieXYZ            => None, BT_709_D65_TO_CIE_XYZ_D65, None);
 impl_conversion!(LinearSrgb to Bt2020            => None, BT_709_D65_TO_BT_2020_D65, None);
 impl_conversion!(LinearSrgb to Oklab             => None, BT_709_D65_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(LinearSrgb to Oklch             => None, BT_709_D65_TO_CIE_XYZ_D65, XYZ_to_Oklch);
@@ -331,19 +447,20 @@ pub struct EncodedSrgb;
 
 impl_color_space! {
     EncodedSrgb is ENCODED_SRGB and Nonlinear,
+    cint is EncodedSrgb,
     LinearSpace is LinearSrgb,
     Derefs as Rgb,
     Displays as "Encoded sRGB",
     Encodes from LinearSrgb,
 }
 
-impl AsU8Array for EncodedSrgb {}
+impl_as_u8_array!(EncodedSrgb: EncodedSrgb);
 
 impl_conversion!(EncodedSrgb to LinearSrgb => sRGB_eotf, None, None);
 impl_conversion!(EncodedSrgb to AcesCg => sRGB_eotf, BT_709_D65_TO_AP1_D60, None);
 impl_conversion!(EncodedSrgb to Aces2065 => sRGB_eotf, BT_709_D65_TO_AP0_D60, None);
 impl_conversion!(EncodedSrgb to DisplayP3 => sRGB_eotf, BT_709_D65_TO_P3_D65, None);
-impl_conversion!(EncodedSrgb to CieXyz => sRGB_eotf, BT_709_D65_TO_CIE_XYZ_D65, None);
+impl_conversion!(EncodedSrgb to CieXYZ => sRGB_eotf, BT_709_D65_TO_CIE_XYZ_D65, None);
 impl_conversion!(EncodedSrgb to Bt2020 => sRGB_eotf, BT_709_D65_TO_BT_2020_D65, None);
 impl_conversion!(EncodedSrgb to Oklab => sRGB_eotf, BT_709_D65_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(EncodedSrgb to Oklch => sRGB_eotf, BT_709_D65_TO_CIE_XYZ_D65, XYZ_to_Oklch);
@@ -354,28 +471,29 @@ impl_conversion!(EncodedSrgb to EncodedBt2100PQ => sRGB_eotf, BT_709_D65_TO_BT_2
 impl_conversion!(EncodedSrgb to EncodedDisplayP3 => sRGB_eotf, BT_709_D65_TO_P3_D65, sRGB_oetf);
 
 /// A type representing the reference [XYZ][dynamic_spaces::CIE_XYZ] color space.
-pub struct CieXyz;
+pub struct CieXYZ;
 
 impl_color_space! {
-    CieXyz is CIE_XYZ and Linear,
+    CieXYZ is CIE_XYZ and Linear,
+    cint is CieXYZ,
     Derefs as Xyz,
     Displays as "CIE XYZ",
 }
 
-impl_conversion!(CieXyz to LinearSrgb        => None, CIE_XYZ_D65_TO_BT_709_D65, None);
-impl_conversion!(CieXyz to AcesCg            => None, CIE_XYZ_D65_TO_AP1_D60, None);
-impl_conversion!(CieXyz to Aces2065          => None, CIE_XYZ_D65_TO_AP0_D60, None);
-impl_conversion!(CieXyz to DisplayP3         => None, CIE_XYZ_D65_TO_P3_D65, None);
-impl_conversion!(CieXyz to CieXyz            => None, None, None);
-impl_conversion!(CieXyz to Bt2020            => None, CIE_XYZ_D65_TO_BT_2020_D65, None);
-impl_conversion!(CieXyz to Oklab             => None, None, XYZ_to_Oklab);
-impl_conversion!(CieXyz to Oklch             => None, None, XYZ_to_Oklch);
-impl_conversion!(CieXyz to ICtCpPQ           => None, CIE_XYZ_D65_TO_BT_2020_D65, RGB_to_ICtCp_PQ);
-impl_conversion!(CieXyz to EncodedAcesCgSrgb => None, CIE_XYZ_D65_TO_AP1_D60, sRGB_oetf);
-impl_conversion!(CieXyz to EncodedBt2020     => None, CIE_XYZ_D65_TO_BT_2020_D65, bt601_oetf);
-impl_conversion!(CieXyz to EncodedBt2100PQ   => None, CIE_XYZ_D65_TO_BT_2020_D65, ST_2084_PQ_eotf_inverse);
-impl_conversion!(CieXyz to EncodedDisplayP3  => None, CIE_XYZ_D65_TO_P3_D65, sRGB_oetf);
-impl_conversion!(CieXyz to EncodedSrgb       => None, CIE_XYZ_D65_TO_BT_709_D65, sRGB_oetf);
+impl_conversion!(CieXYZ to LinearSrgb        => None, CIE_XYZ_D65_TO_BT_709_D65, None);
+impl_conversion!(CieXYZ to AcesCg            => None, CIE_XYZ_D65_TO_AP1_D60, None);
+impl_conversion!(CieXYZ to Aces2065          => None, CIE_XYZ_D65_TO_AP0_D60, None);
+impl_conversion!(CieXYZ to DisplayP3         => None, CIE_XYZ_D65_TO_P3_D65, None);
+impl_conversion!(CieXYZ to CieXYZ            => None, None, None);
+impl_conversion!(CieXYZ to Bt2020            => None, CIE_XYZ_D65_TO_BT_2020_D65, None);
+impl_conversion!(CieXYZ to Oklab             => None, None, XYZ_to_Oklab);
+impl_conversion!(CieXYZ to Oklch             => None, None, XYZ_to_Oklch);
+impl_conversion!(CieXYZ to ICtCpPQ           => None, CIE_XYZ_D65_TO_BT_2020_D65, RGB_to_ICtCp_PQ);
+impl_conversion!(CieXYZ to EncodedAcesCgSrgb => None, CIE_XYZ_D65_TO_AP1_D60, sRGB_oetf);
+impl_conversion!(CieXYZ to EncodedBt2020     => None, CIE_XYZ_D65_TO_BT_2020_D65, bt601_oetf);
+impl_conversion!(CieXYZ to EncodedBt2100PQ   => None, CIE_XYZ_D65_TO_BT_2020_D65, ST_2084_PQ_eotf_inverse);
+impl_conversion!(CieXYZ to EncodedDisplayP3  => None, CIE_XYZ_D65_TO_P3_D65, sRGB_oetf);
+impl_conversion!(CieXYZ to EncodedSrgb       => None, CIE_XYZ_D65_TO_BT_709_D65, sRGB_oetf);
 
 /// A type representing the [BT.2020][dynamic_spaces::BT_2020] color space
 /// (equivalent to the linear BT.2100 color space).
@@ -383,6 +501,7 @@ pub struct Bt2020;
 
 impl_color_space! {
     Bt2020 is BT_2020 and Linear,
+    cint is Bt2020,
     Derefs as Rgb,
     Displays as "BT.2020",
 }
@@ -391,7 +510,7 @@ impl_conversion!(Bt2020 to LinearSrgb        => None, BT_2020_D65_TO_BT_709_D65,
 impl_conversion!(Bt2020 to AcesCg            => None, BT_2020_D65_TO_AP1_D60, None);
 impl_conversion!(Bt2020 to Aces2065          => None, BT_2020_D65_TO_AP0_D60, None);
 impl_conversion!(Bt2020 to DisplayP3         => None, BT_2020_D65_TO_P3_D65, None);
-impl_conversion!(Bt2020 to CieXyz            => None, BT_2020_D65_TO_CIE_XYZ_D65, None);
+impl_conversion!(Bt2020 to CieXYZ            => None, BT_2020_D65_TO_CIE_XYZ_D65, None);
 impl_conversion!(Bt2020 to Bt2020            => None, None, None);
 impl_conversion!(Bt2020 to Oklab             => None, BT_2020_D65_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(Bt2020 to Oklch             => None, BT_2020_D65_TO_CIE_XYZ_D65, XYZ_to_Oklch);
@@ -407,6 +526,7 @@ pub struct EncodedBt2020;
 
 impl_color_space! {
     EncodedBt2020 is ENCODED_BT_2020 and Nonlinear,
+    cint is EncodedBt2020,
     LinearSpace is Bt2020,
     Derefs as Rgb,
     Displays as "Encoded BT.2020",
@@ -417,7 +537,7 @@ impl_conversion!(EncodedBt2020 to LinearSrgb        => bt601_oetf_inverse, BT_20
 impl_conversion!(EncodedBt2020 to AcesCg            => bt601_oetf_inverse, BT_2020_D65_TO_AP1_D60, None);
 impl_conversion!(EncodedBt2020 to Aces2065          => bt601_oetf_inverse, BT_2020_D65_TO_AP0_D60, None);
 impl_conversion!(EncodedBt2020 to DisplayP3         => bt601_oetf_inverse, BT_2020_D65_TO_P3_D65, None);
-impl_conversion!(EncodedBt2020 to CieXyz            => bt601_oetf_inverse, BT_2020_D65_TO_CIE_XYZ_D65, None);
+impl_conversion!(EncodedBt2020 to CieXYZ            => bt601_oetf_inverse, BT_2020_D65_TO_CIE_XYZ_D65, None);
 impl_conversion!(EncodedBt2020 to Bt2020            => bt601_oetf_inverse, None, None);
 impl_conversion!(EncodedBt2020 to Oklab             => bt601_oetf_inverse, BT_2020_D65_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(EncodedBt2020 to Oklch             => bt601_oetf_inverse, BT_2020_D65_TO_CIE_XYZ_D65, XYZ_to_Oklch);
@@ -436,6 +556,7 @@ pub struct EncodedBt2100PQ;
 
 impl_color_space! {
     EncodedBt2100PQ is ENCODED_BT_2100_PQ and Nonlinear,
+    cint is EncodedBt2100PQ,
     LinearSpace is Bt2100,
     Derefs as Rgb,
     Displays as "Encoded BT.2100 (PQ)",
@@ -446,7 +567,7 @@ impl_conversion!(EncodedBt2100PQ to LinearSrgb        => ST_2084_PQ_eotf, BT_202
 impl_conversion!(EncodedBt2100PQ to AcesCg            => ST_2084_PQ_eotf, BT_2020_D65_TO_AP1_D60, None);
 impl_conversion!(EncodedBt2100PQ to Aces2065          => ST_2084_PQ_eotf, BT_2020_D65_TO_AP0_D60, None);
 impl_conversion!(EncodedBt2100PQ to DisplayP3         => ST_2084_PQ_eotf, BT_2020_D65_TO_P3_D65, None);
-impl_conversion!(EncodedBt2100PQ to CieXyz            => ST_2084_PQ_eotf, BT_2020_D65_TO_CIE_XYZ_D65, None);
+impl_conversion!(EncodedBt2100PQ to CieXYZ            => ST_2084_PQ_eotf, BT_2020_D65_TO_CIE_XYZ_D65, None);
 impl_conversion!(EncodedBt2100PQ to Bt2020            => ST_2084_PQ_eotf, None, None);
 impl_conversion!(EncodedBt2100PQ to Oklab             => ST_2084_PQ_eotf, BT_2020_D65_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(EncodedBt2100PQ to Oklch             => ST_2084_PQ_eotf, BT_2020_D65_TO_CIE_XYZ_D65, XYZ_to_Oklch);
@@ -462,7 +583,8 @@ pub struct ICtCpPQ;
 
 impl_color_space! {
     ICtCpPQ is ICtCp_PQ and Nonlinear,
-    LinearSpace is CieXyz,
+    cint is ICtCpPQ,
+    LinearSpace is CieXYZ,
     Derefs as ICtCp,
     Displays as "ICtCp (PQ)",
 }
@@ -471,7 +593,7 @@ impl_conversion!(ICtCpPQ to LinearSrgb        => ICtCp_PQ_to_RGB, BT_2020_D65_TO
 impl_conversion!(ICtCpPQ to AcesCg            => ICtCp_PQ_to_RGB, BT_2020_D65_TO_AP1_D60, None);
 impl_conversion!(ICtCpPQ to Aces2065          => ICtCp_PQ_to_RGB, BT_2020_D65_TO_AP0_D60, None);
 impl_conversion!(ICtCpPQ to DisplayP3         => ICtCp_PQ_to_RGB, BT_2020_D65_TO_P3_D65, None);
-impl_conversion!(ICtCpPQ to CieXyz            => ICtCp_PQ_to_RGB, BT_2020_D65_TO_CIE_XYZ_D65, None);
+impl_conversion!(ICtCpPQ to CieXYZ            => ICtCp_PQ_to_RGB, BT_2020_D65_TO_CIE_XYZ_D65, None);
 impl_conversion!(ICtCpPQ to Bt2020            => ICtCp_PQ_to_RGB, None, None);
 impl_conversion!(ICtCpPQ to Oklab             => ICtCp_PQ_to_RGB, BT_2020_D65_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(ICtCpPQ to Oklch             => ICtCp_PQ_to_RGB, BT_2020_D65_TO_CIE_XYZ_D65, XYZ_to_Oklch);
@@ -487,7 +609,8 @@ pub struct Oklab;
 
 impl_color_space! {
     Oklab is OKLAB and Nonlinear,
-    LinearSpace is CieXyz,
+    cint is Oklab,
+    LinearSpace is CieXYZ,
     Derefs as Lab,
     Displays as "Oklab",
 }
@@ -496,7 +619,7 @@ impl_conversion!(Oklab to LinearSrgb        => Oklab_to_XYZ, CIE_XYZ_D65_TO_BT_7
 impl_conversion!(Oklab to AcesCg            => Oklab_to_XYZ, CIE_XYZ_D65_TO_AP1_D60, None);
 impl_conversion!(Oklab to Aces2065          => Oklab_to_XYZ, CIE_XYZ_D65_TO_AP0_D60, None);
 impl_conversion!(Oklab to DisplayP3         => Oklab_to_XYZ, CIE_XYZ_D65_TO_P3_D65, None);
-impl_conversion!(Oklab to CieXyz            => Oklab_to_XYZ, None, None);
+impl_conversion!(Oklab to CieXYZ            => Oklab_to_XYZ, None, None);
 impl_conversion!(Oklab to Bt2020            => Oklab_to_XYZ, CIE_XYZ_D65_TO_BT_2020_D65, None);
 impl_conversion!(Oklab to Oklab             => None, None, None);
 impl_conversion!(Oklab to Oklch             => Oklab_to_XYZ, None, XYZ_to_Oklch);
@@ -512,7 +635,8 @@ pub struct Oklch;
 
 impl_color_space! {
     Oklch is OKLCH and Nonlinear,
-    LinearSpace is CieXyz,
+    cint is Oklch,
+    LinearSpace is CieXYZ,
     Derefs as LCh,
     Displays as "Oklch",
 }
@@ -521,7 +645,7 @@ impl_conversion!(Oklch to LinearSrgb        => Oklch_to_XYZ, CIE_XYZ_D65_TO_BT_7
 impl_conversion!(Oklch to AcesCg            => Oklch_to_XYZ, CIE_XYZ_D65_TO_AP1_D60, None);
 impl_conversion!(Oklch to Aces2065          => Oklch_to_XYZ, CIE_XYZ_D65_TO_AP0_D60, None);
 impl_conversion!(Oklch to DisplayP3         => Oklch_to_XYZ, CIE_XYZ_D65_TO_P3_D65, None);
-impl_conversion!(Oklch to CieXyz            => Oklch_to_XYZ, None, None);
+impl_conversion!(Oklch to CieXYZ            => Oklch_to_XYZ, None, None);
 impl_conversion!(Oklch to Bt2020            => Oklch_to_XYZ, CIE_XYZ_D65_TO_BT_2020_D65, None);
 impl_conversion!(Oklch to Oklab             => Oklch_to_XYZ, None, XYZ_to_Oklab);
 impl_conversion!(Oklch to Oklch             => None, None, None);
@@ -536,6 +660,7 @@ pub struct AcesCg;
 
 impl_color_space! {
     AcesCg is ACES_CG and Linear,
+    cint is AcesCg,
     Derefs as Rgb,
     Displays as "ACEScg",
 }
@@ -544,7 +669,7 @@ impl_conversion!(AcesCg to LinearSrgb        => None, AP1_D60_TO_BT_709_D65, Non
 impl_conversion!(AcesCg to AcesCg            => None, None, None);
 impl_conversion!(AcesCg to Aces2065          => None, AP1_D60_TO_AP0_D60, None);
 impl_conversion!(AcesCg to DisplayP3         => None, AP1_D60_TO_P3_D65, None);
-impl_conversion!(AcesCg to CieXyz            => None, AP1_D60_TO_CIE_XYZ_D65, None);
+impl_conversion!(AcesCg to CieXYZ            => None, AP1_D60_TO_CIE_XYZ_D65, None);
 impl_conversion!(AcesCg to Bt2020            => None, AP1_D60_TO_BT_2020_D65, None);
 impl_conversion!(AcesCg to Oklab             => None, AP1_D60_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(AcesCg to Oklch             => None, AP1_D60_TO_CIE_XYZ_D65, XYZ_to_Oklch);
@@ -575,7 +700,7 @@ impl_conversion!(EncodedAcesCgSrgb to LinearSrgb        => sRGB_eotf, AP1_D60_TO
 impl_conversion!(EncodedAcesCgSrgb to AcesCg            => sRGB_eotf, None, None);
 impl_conversion!(EncodedAcesCgSrgb to Aces2065          => sRGB_eotf, AP1_D60_TO_AP0_D60, None);
 impl_conversion!(EncodedAcesCgSrgb to DisplayP3         => sRGB_eotf, AP1_D60_TO_P3_D65, None);
-impl_conversion!(EncodedAcesCgSrgb to CieXyz            => sRGB_eotf, AP1_D60_TO_CIE_XYZ_D65, None);
+impl_conversion!(EncodedAcesCgSrgb to CieXYZ            => sRGB_eotf, AP1_D60_TO_CIE_XYZ_D65, None);
 impl_conversion!(EncodedAcesCgSrgb to Bt2020            => sRGB_eotf, AP1_D60_TO_BT_2020_D65, None);
 impl_conversion!(EncodedAcesCgSrgb to Oklab             => sRGB_eotf, AP1_D60_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(EncodedAcesCgSrgb to Oklch             => sRGB_eotf, AP1_D60_TO_CIE_XYZ_D65, XYZ_to_Oklch);
@@ -593,6 +718,7 @@ pub struct Aces2065;
 
 impl_color_space! {
     Aces2065 is ACES2065_1 and Linear,
+    cint is Aces2065,
     Derefs as Rgb,
     Displays as "ACES 2065-1",
 }
@@ -601,7 +727,7 @@ impl_conversion!(Aces2065 to LinearSrgb        => None, AP0_D60_TO_BT_709_D65, N
 impl_conversion!(Aces2065 to AcesCg            => None, AP0_D60_TO_AP1_D60, None);
 impl_conversion!(Aces2065 to Aces2065          => None, None, None);
 impl_conversion!(Aces2065 to DisplayP3         => None, AP0_D60_TO_P3_D65, None);
-impl_conversion!(Aces2065 to CieXyz            => None, AP0_D60_TO_CIE_XYZ_D65, None);
+impl_conversion!(Aces2065 to CieXYZ            => None, AP0_D60_TO_CIE_XYZ_D65, None);
 impl_conversion!(Aces2065 to Bt2020            => None, AP0_D60_TO_BT_2020_D65, None);
 impl_conversion!(Aces2065 to Oklab             => None, AP0_D60_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(Aces2065 to Oklch             => None, AP0_D60_TO_CIE_XYZ_D65, XYZ_to_Oklch);
@@ -617,6 +743,7 @@ pub struct DisplayP3;
 
 impl_color_space! {
     DisplayP3 is DISPLAY_P3 and Linear,
+    cint is DisplayP3,
     Derefs as Rgb,
     Displays as "Display P3",
 }
@@ -625,7 +752,7 @@ impl_conversion!(DisplayP3 to LinearSrgb        => None, P3_D65_TO_BT_709_D65, N
 impl_conversion!(DisplayP3 to AcesCg            => None, P3_D65_TO_AP1_D60, None);
 impl_conversion!(DisplayP3 to Aces2065          => None, P3_D65_TO_AP0_D60, None);
 impl_conversion!(DisplayP3 to DisplayP3         => None, None, None);
-impl_conversion!(DisplayP3 to CieXyz            => None, P3_D65_TO_CIE_XYZ_D65, None);
+impl_conversion!(DisplayP3 to CieXYZ            => None, P3_D65_TO_CIE_XYZ_D65, None);
 impl_conversion!(DisplayP3 to Bt2020            => None, P3_D65_TO_BT_2020_D65, None);
 impl_conversion!(DisplayP3 to Oklab             => None, P3_D65_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(DisplayP3 to Oklch             => None, P3_D65_TO_CIE_XYZ_D65, XYZ_to_Oklch);
@@ -641,6 +768,7 @@ pub struct EncodedDisplayP3;
 
 impl_color_space! {
     EncodedDisplayP3 is ENCODED_DISPLAY_P3 and Nonlinear,
+    cint is EncodedDisplayP3,
     LinearSpace is DisplayP3,
     Derefs as Rgb,
     Displays as "Encoded Display P3",
@@ -651,7 +779,7 @@ impl_conversion!(EncodedDisplayP3 to LinearSrgb        => sRGB_eotf, P3_D65_TO_B
 impl_conversion!(EncodedDisplayP3 to AcesCg            => sRGB_eotf, P3_D65_TO_AP1_D60, None);
 impl_conversion!(EncodedDisplayP3 to Aces2065          => sRGB_eotf, P3_D65_TO_AP0_D60, None);
 impl_conversion!(EncodedDisplayP3 to DisplayP3         => sRGB_eotf, None, None);
-impl_conversion!(EncodedDisplayP3 to CieXyz            => sRGB_eotf, P3_D65_TO_CIE_XYZ_D65, None);
+impl_conversion!(EncodedDisplayP3 to CieXYZ            => sRGB_eotf, P3_D65_TO_CIE_XYZ_D65, None);
 impl_conversion!(EncodedDisplayP3 to Bt2020            => sRGB_eotf, P3_D65_TO_BT_2020_D65, None);
 impl_conversion!(EncodedDisplayP3 to Oklab             => sRGB_eotf, P3_D65_TO_CIE_XYZ_D65, XYZ_to_Oklab);
 impl_conversion!(EncodedDisplayP3 to Oklch             => sRGB_eotf, P3_D65_TO_CIE_XYZ_D65, XYZ_to_Oklch);

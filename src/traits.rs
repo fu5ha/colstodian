@@ -1,8 +1,5 @@
 //! [`Color`] system.
-use crate::{
-    Color, ColorResult, DynamicAlphaState, DynamicColor, DynamicColorSpace, DynamicState,
-    Premultiplied, Separate,
-};
+use crate::{Color, ColorAlpha, ColorResult, DynamicAlphaState, DynamicColor, DynamicColorSpace, DynamicState, Premultiplied, Separate};
 
 use glam::Vec3;
 
@@ -175,6 +172,53 @@ impl<SrcAlpha, DstAlpha: ConvertFromAlphaRaw<SrcAlpha>> ConvertToAlphaRaw<DstAlp
     fn convert_raw(raw: Vec3, alpha: f32) -> Vec3 {
         <DstAlpha as ConvertFromAlphaRaw<SrcAlpha>>::convert_raw(raw, alpha)
     }
+}
+
+/// A "conversion query" for a [`Color`][crate::Color].
+///
+/// A type that implements this
+/// trait is able to be used as the type parameter for [`Color::convert`][crate::Color::convert].
+///
+/// The types that implement this trait are:
+/// * [`ColorSpace`] types
+/// * [`Color`][crate::Color] types (in which case it will be converted to that color's space)
+pub trait ColorConversionQuery<SrcSpace: ColorSpace, St: State> {
+    type DstSpace: ConvertFromRaw<SrcSpace>;
+}
+
+impl<SrcSpace, DstSpace, St> ColorConversionQuery<SrcSpace, St> for Color<DstSpace, St>
+where
+    SrcSpace: ColorSpace,
+    DstSpace: ConvertFromRaw<SrcSpace>,
+    St: State,
+{
+    type DstSpace = DstSpace;
+}
+
+/// A "conversion query" for a [`ColorAlpha`][crate::ColorAlpha].
+///
+/// A type that implements this
+/// trait is able to be used as the type parameter for [`ColorAlpha::convert_to`][crate::ColorAlpha::convert_to].
+///
+/// The types that implement this trait are:
+/// * [`ColorSpace`] types
+/// * [`AlphaState`] types
+/// * [`ColorAlpha`][crate::ColorAlpha] types (in which case it will be converted to that color's space and alpha state)
+pub trait ColorAlphaConversionQuery<SrcSpace: ColorSpace, SrcAlpha: AlphaState> {
+    type DstSpace: ConvertFromRaw<SrcSpace>;
+    type DstAlpha: ConvertFromAlphaRaw<SrcAlpha> + AlphaState;
+}
+
+impl<SrcSpace, DstSpc, SrcAlpha, DstAlpha> ColorAlphaConversionQuery<SrcSpace, SrcAlpha>
+    for ColorAlpha<DstSpc, DstAlpha>
+where
+    SrcSpace: ColorSpace,
+    DstSpc: ConvertFromRaw<SrcSpace>,
+    SrcAlpha: AlphaState,
+    DstAlpha: ConvertFromAlphaRaw<SrcAlpha> + AlphaState,
+{
+    type DstSpace = DstSpc;
+    type DstAlpha = DstAlpha;
 }
 
 /// An object-safe trait implemented by both [`Color`] and [`DynamicColor`].

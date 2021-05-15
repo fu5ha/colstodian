@@ -22,6 +22,16 @@ impl ConvertFromAlphaRaw<Separate> for Premultiplied {
     }
 }
 
+impl<SrcSpace, SrcAlpha> ColorAlphaConversionQuery<SrcSpace, SrcAlpha> for Premultiplied
+where
+    SrcSpace: ConvertFromRaw<SrcSpace>,
+    SrcAlpha: AlphaState,
+    Self: ConvertFromAlphaRaw<SrcAlpha>,
+{
+    type DstSpace = SrcSpace;
+    type DstAlpha = Self;
+}
+
 impl fmt::Display for Premultiplied {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Premultiplied")
@@ -46,6 +56,16 @@ impl ConvertFromAlphaRaw<Premultiplied> for Separate {
             raw
         }
     }
+}
+
+impl<SrcSpace, SrcAlpha> ColorAlphaConversionQuery<SrcSpace, SrcAlpha> for Separate
+where
+    SrcSpace: ConvertFromRaw<SrcSpace>,
+    SrcAlpha: AlphaState,
+    Self: ConvertFromAlphaRaw<SrcAlpha>,
+{
+    type DstSpace = SrcSpace;
+    type DstAlpha = Self;
 }
 
 impl fmt::Display for Separate {

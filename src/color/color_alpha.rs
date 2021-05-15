@@ -8,8 +8,9 @@ use crate::{
     Separate,
 };
 
-use derivative::*;
 use glam::{Vec4, Vec4Swizzles};
+#[cfg(all(not(feature = "std"), feature = "libm"))]
+use num_traits::Float;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -20,12 +21,9 @@ use serde::{Deserialize, Serialize};
 ///
 /// See crate-level docs as well as [`ColorSpace`] and [`AlphaState`] for more.
 #[repr(C)]
-#[derive(Derivative)]
-#[derivative(Clone, Copy, PartialEq)]
 pub struct ColorAlpha<Spc, A> {
     /// The raw values of the color. Be careful when modifying this directly.
     pub raw: Vec4,
-    #[derivative(PartialEq = "ignore")]
     _pd: PhantomData<(Spc, A)>,
 }
 
@@ -107,6 +105,27 @@ where
         let dst = <DstSpace as ConvertFromRaw<SrcSpace>>::dst_transform_raw(dst_alpha);
 
         ColorAlpha::from_raw(dst.extend(alpha))
+    }
+
+    /// Converts from one color space and state to another.
+    ///
+    /// This works the same as [`convert`][Color::convert] except there is only one type parameter, the
+    /// "[Query][ColorAlphaConversionQuery]".
+    ///
+    /// The query is meant to be one of:
+    /// * A [`ColorSpace`]
+    /// * A [`AlphaState`]
+    /// * A [`ColorAlpha`] (in which case it will be converted to that color's space and alpha state)
+    ///
+    /// This query is slightly more generic than the ones on [`convert`][ColorAlpha::convert], which
+    /// means that the Rust type system is usually not able to infer the query without you explicitly giving one.
+    ///
+    /// This can be useful in conjunction with defined type aliases for predefined [`ColorAlpha`] types.
+    pub fn convert_to<Query>(self) -> ColorAlpha<Query::DstSpace, Query::DstAlpha>
+    where
+        Query: ColorAlphaConversionQuery<SrcSpace, SrcAlpha>,
+    {
+        self.convert::<Query::DstSpace, Query::DstAlpha>()
     }
 
     /// Converts `self` to the provided `DstAlpha` [`AlphaState`].
@@ -241,11 +260,22 @@ where
     }
 }
 
-#[cfg(feature = "bytemuck")]
+impl<Spc, A> Copy for ColorAlpha<Spc, A> {}
+
+impl<Spc, A> Clone for ColorAlpha<Spc, A> {
+    fn clone(&self) -> ColorAlpha<Spc, A> {
+        *self
+    }
+}
+
+impl<Spc, A> PartialEq for ColorAlpha<Spc, A> {
+    fn eq(&self, other: &ColorAlpha<Spc, A>) -> bool {
+        self.raw == other.raw
+    }
+}
+
 unsafe impl<Spc, A> bytemuck::Zeroable for ColorAlpha<Spc, A> {}
-#[cfg(feature = "bytemuck")]
 unsafe impl<Spc, A> bytemuck::TransparentWrapper<Vec4> for ColorAlpha<Spc, A> {}
-#[cfg(feature = "bytemuck")]
 unsafe impl<Spc: 'static, A: 'static> bytemuck::Pod for ColorAlpha<Spc, A> {}
 
 macro_rules! impl_op_color {
