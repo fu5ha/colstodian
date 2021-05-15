@@ -1,5 +1,8 @@
 //! [`Color`] system.
-use crate::{Color, ColorAlpha, ColorResult, DynamicAlphaState, DynamicColor, DynamicColorSpace, DynamicState, Premultiplied, Separate};
+use crate::{
+    Color, ColorAlpha, ColorResult, DynamicAlphaState, DynamicColor, DynamicColorSpace,
+    DynamicState, Premultiplied, Separate,
+};
 
 use glam::Vec3;
 
