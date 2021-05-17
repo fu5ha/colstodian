@@ -354,8 +354,8 @@ impl DynamicColorAlpha {
 
     /// Converts from one color space and state to another.
     ///
-    /// * If converting from [Premultiplied] to [Separate], you must ensure that `self.alpha != 0.0`, otherwise
-    /// a divide by 0 will occur and `Inf`s will result.
+    /// * If converting from [Premultiplied][DynamicAlphaState::Premultiplied] to [Separate][DynamicAlphaState::Separate], if
+    /// `self`'s alpha is 0.0, the resulting color values will not be changed.
     pub fn convert(mut self, dst_space: DynamicColorSpace, dst_alpha: DynamicAlphaState) -> Self {
         let conversion = kolor::ColorConversion::new(self.space, dst_space);
 
@@ -376,6 +376,17 @@ impl DynamicColorAlpha {
         self.space = dst_space;
 
         self
+    }
+
+    /// Convert `self` to the specified space and downcast it to a typed [`ColorAlpha`] with the space
+    /// and state specified.
+    pub fn downcast_convert<DstSpace, DstAlpha>(self) -> ColorAlpha<DstSpace, DstAlpha>
+    where
+        DstSpace: ColorSpace,
+        DstAlpha: AlphaState,
+    {
+        let dst = self.convert(DstSpace::SPACE, DstAlpha::STATE);
+        ColorAlpha::from_raw(dst.raw)
     }
 
     /// Converts `self` to the provided `dst_alpha` [`DynamicAlphaState`].
@@ -406,35 +417,10 @@ impl DynamicColorAlpha {
     }
 }
 
-/// An object-safe trait implemented by both [`ColorAlpha`] and [`DynamicColorAlpha`].
-pub trait AnyColorAlpha {
-    fn raw(&self) -> Vec4;
-    fn space(&self) -> DynamicColorSpace;
-    fn alpha_state(&self) -> DynamicAlphaState;
-
-    /// Upcasts `self` into a [`DynamicColorAlpha`]
-    fn dynamic(&self) -> DynamicColorAlpha {
-        DynamicColorAlpha::new(self.raw(), self.space(), self.alpha_state())
-    }
-}
-
 impl<'a> From<&'a dyn AnyColorAlpha> for DynamicColorAlpha {
     fn from(color: &'a dyn AnyColorAlpha) -> DynamicColorAlpha {
         color.dynamic()
     }
-}
-
-/// A type that implements this trait provides the ability to downcast from a dynamically-typed
-/// color to a statically-typed [`ColorAlpha`]. This is implemented for all types that implement [`AnyColorAlpha`]
-pub trait DynColorAlpha {
-    /// Attempt to convert to a typed [`ColorAlpha`]. Returns an error if `self`'s color space and alpha state do not match
-    /// the given types.
-    fn downcast<Spc: ColorSpace, A: AlphaState>(&self) -> ColorResult<ColorAlpha<Spc, A>>;
-
-    /// Convert to a typed `ColorAlpha` without checking if the color space and state types
-    /// match this color's space and state. Use only if you are sure that this color
-    /// is in the correct format.
-    fn downcast_unchecked<Spc: ColorSpace, A: AlphaState>(&self) -> ColorAlpha<Spc, A>;
 }
 
 impl<C: AnyColorAlpha> DynColorAlpha for C {

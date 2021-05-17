@@ -430,6 +430,20 @@ impl DynamicColor {
         })
     }
 
+    /// Convert `self` to the specified space and downcast it to a typed [`Color`] with the space
+    /// and state specified. `self` must already be in the correct [DynamicState]
+    pub fn downcast_convert<DstSpace, DstState>(self) -> ColorResult<Color<DstSpace, DstState>>
+    where
+        DstSpace: ColorSpace,
+        DstState: State,
+    {
+        if self.state() != DstState::STATE {
+            return Err(DowncastError::MismatchedState(self.state(), DstState::STATE).into());
+        }
+        let dst = self.convert(DstSpace::SPACE)?;
+        Ok(Color::from_raw(dst.raw))
+    }
+
     /// Convert `self` into the closest linear color space, if it is not linear already
     pub fn linearize(self) -> Self {
         use kolor::details::{color::TransformFn, transform::ColorTransform};

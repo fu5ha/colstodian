@@ -1,10 +1,7 @@
 //! [`Color`] system.
-use crate::{
-    Color, ColorAlpha, ColorResult, DynamicAlphaState, DynamicColor, DynamicColorSpace,
-    DynamicState, Premultiplied, Separate,
-};
+use crate::{Color, ColorAlpha, ColorResult, DynamicAlphaState, DynamicColor, DynamicColorAlpha, DynamicColorSpace, DynamicState, Premultiplied, Separate};
 
-use glam::Vec3;
+use glam::{Vec3, Vec4};
 
 use core::fmt;
 
@@ -253,4 +250,29 @@ pub trait DynColor {
     /// match this color's space and state. Use only if you are sure that this color
     /// is in the correct format.
     fn downcast_unchecked<Spc: ColorSpace, St: State>(&self) -> Color<Spc, St>;
+}
+
+/// An object-safe trait implemented by both [`ColorAlpha`] and [`DynamicColorAlpha`]
+pub trait AnyColorAlpha {
+    fn raw(&self) -> Vec4;
+    fn space(&self) -> DynamicColorSpace;
+    fn alpha_state(&self) -> DynamicAlphaState;
+
+    /// Upcasts `self` into a [`DynamicColorAlpha`]
+    fn dynamic(&self) -> DynamicColorAlpha {
+        DynamicColorAlpha::new(self.raw(), self.space(), self.alpha_state())
+    }
+}
+
+/// A type that implements this trait provides the ability to downcast from a dynamically-typed
+/// color to a statically-typed [`ColorAlpha`]. This is implemented for all types that implement [`AnyColorAlpha`]
+pub trait DynColorAlpha {
+    /// Attempt to downcast to a typed [`ColorAlpha`]. Returns an error if `self`'s color space and alpha state do not match
+    /// the given types.
+    fn downcast<Spc: ColorSpace, A: AlphaState>(&self) -> ColorResult<ColorAlpha<Spc, A>>;
+
+    /// Downcast to a typed [`ColorAlpha`] without checking if the color space and state types
+    /// match this color's space and state. Use only if you are sure that this color
+    /// is in the correct format.
+    fn downcast_unchecked<Spc: ColorSpace, A: AlphaState>(&self) -> ColorAlpha<Spc, A>;
 }
