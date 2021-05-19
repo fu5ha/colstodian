@@ -116,10 +116,12 @@
 //!
 //! ```rust
 //! # use colstodian::*;
+//! use colstodian::blenders::Linear;
+//!
 //! let oklab1 = color::srgb_u8(128, 12, 57).convert::<Oklab>();
 //! let oklab2 = color::srgb_u8(25, 35, 68).convert::<Oklab>();
 //!
-//! let blended = lerp(oklab1..=oklab2, 0.5); // Blend half way between the two colors
+//! let blended = oklab1.blend::<Linear>(oklab2, 0.5); // Blend half way between the two colors
 //! ```
 //!
 //! This is also the first time we see the [`convert`][Color::convert] method, which we'll be using,
@@ -153,6 +155,7 @@
 //!
 //! ```rust
 //! # use colstodian::*;
+//! # use colstodian::blenders::Linear;
 //! // You could have these defined and used throughout your codebase.
 //! type Perceptual = Color<Oklab, Display>;
 //! type Srgb = Color<EncodedSrgb, Display>;
@@ -160,8 +163,8 @@
 //! let color_1 = color::srgb_u8(128, 12, 57);
 //! let color_2 = color::srgb_u8(25, 35, 68);
 //!
-//! let blended_u8: [u8; 3] = lerp(
-//!     color_1.convert_to::<Perceptual>()..=color_2.convert_to::<Perceptual>(),
+//! let blended_u8: [u8; 3] = color_1.convert_to::<Perceptual>().blend::<Linear>(
+//!     color_2.convert_to::<Perceptual>(),
 //!     0.5
 //! ).convert_to::<Srgb>().to_u8();
 //! ```
@@ -335,7 +338,8 @@
 
 pub use kolor;
 
-use core::ops::*;
+/// Blenders used in places that require a [ColorBlender].
+pub mod blenders;
 
 /// Types representing different color spaces.
 ///
@@ -373,16 +377,6 @@ pub use traits::{AlphaState, AnyColor, ColorSpace, ConvertTo, DynColor, State};
 /// Error handling types.
 pub mod error;
 pub use error::{ColorError, ColorResult};
-
-/// Linearly interpolate between `range.start()..=range.end()` by `factor`.
-pub fn lerp<T>(range: RangeInclusive<T>, factor: f32) -> T
-where
-    T: Copy + Mul<f32, Output = T> + Sub<Output = T> + Add<Output = T>,
-{
-    let start = *range.start();
-    let end = *range.end();
-    start + (end - start) * factor
-}
 
 #[cfg(test)]
 mod tests {

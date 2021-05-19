@@ -2,11 +2,7 @@ use core::fmt;
 use core::marker::PhantomData;
 use core::ops::*;
 
-use crate::{
-    error::DowncastError, traits::*, ColAlpha, Color, ColorResult, Display, DynamicAlphaState,
-    DynamicColor, DynamicColorSpace, DynamicState, EncodedSrgb, LinearSrgb, Premultiplied,
-    Separate,
-};
+use crate::{ColAlpha, Color, ColorResult, Display, DynamicAlphaState, DynamicColor, DynamicColorSpace, DynamicState, EncodedSrgb, LinearSrgb, Premultiplied, Separate, error::DowncastError, traits::*};
 
 use glam::{Vec4, Vec4Swizzles};
 #[cfg(all(not(feature = "std"), feature = "libm"))]
@@ -163,6 +159,72 @@ where
     }
 }
 
+impl<Spc: WorkingColorSpace> ColorAlpha<Spc, Separate> {
+    /// Blend `self`'s color values with the color values from `other`. Does not blend alpha.
+    pub fn blend<Blender: ColorBlender>(self, other: ColorAlpha<Spc, Separate>, factor: f32) -> ColorAlpha<Spc, Separate> {
+        self.blend_with::<Blender>(other, factor, Default::default())
+    }
+
+    /// Blend `self`'s color values with the color values from `other`. Also blends alpha.
+    pub fn blend_alpha<Blender: ColorBlender>(self, other: ColorAlpha<Spc, Separate>, factor: f32) -> ColorAlpha<Spc, Separate> {
+        self.blend_alpha_with::<Blender>(other, factor, Default::default())
+    }
+
+    /// Blend `self`'s color values with the color values from `other`. Does not blend alpha.
+    pub fn blend_with<Blender: ColorBlender>(self, other: ColorAlpha<Spc, Separate>, factor: f32, params: Blender::Params) -> ColorAlpha<Spc, Separate> {
+        let raw1 = self.raw;
+        let raw2 = other.raw;
+        let x = Blender::blend_with(raw1.x, raw2.x, factor, params);
+        let y = Blender::blend_with(raw1.y, raw2.y, factor, params);
+        let z = Blender::blend_with(raw1.z, raw2.z, factor, params);
+        ColorAlpha::from_raw(Vec4::new(x, y, z, raw1.w))
+    }
+
+    /// Blend `self`'s color values with the color values from `other`. Also blends alpha.
+    pub fn blend_alpha_with<Blender: ColorBlender>(self, other: ColorAlpha<Spc, Separate>, factor: f32, params: Blender::Params) -> ColorAlpha<Spc, Separate> {
+        let raw1 = self.raw;
+        let raw2 = other.raw;
+        let x = Blender::blend_with(raw1.x, raw2.x, factor, params);
+        let y = Blender::blend_with(raw1.y, raw2.y, factor, params);
+        let z = Blender::blend_with(raw1.z, raw2.z, factor, params);
+        let a = Blender::blend_with(raw1.w, raw2.w, factor, params);
+        ColorAlpha::from_raw(Vec4::new(x, y, z, a))
+    }
+}
+
+impl<Spc: LinearColorSpace, A: AlphaState> ColorAlpha<Spc, A>
+where
+    Premultiplied: ConvertFromAlphaRaw<A>
+{
+    /// Premultiplies `self` by multiplying its color components by its alpha. Does nothing if `self` is already premultiplied.
+    pub fn premultiply(
+        self,
+    ) -> ColorAlpha<Spc, Premultiplied> {
+        let raw = self.raw.xyz();
+        let alpha = self.raw.w;
+        let converted = <Premultiplied as ConvertFromAlphaRaw<A>>::convert_raw(raw, alpha);
+        ColorAlpha::from_raw(converted.extend(alpha))
+    }
+}
+
+impl<Spc: LinearColorSpace, A: AlphaState> ColorAlpha<Spc, A>
+where
+    Separate: ConvertFromAlphaRaw<A>
+{
+    /// Separates `self` by dividing its color components by its alpha. Does nothing if `self` is already separate.
+    ///
+    /// * You must ensure that `self.alpha != 0.0`, otherwise
+    /// a divide by 0 will occur and `Inf`s will result.
+    pub fn separate(
+        self,
+    ) -> ColorAlpha<Spc, Separate> {
+        let raw = self.raw.xyz();
+        let alpha = self.raw.w;
+        let converted = <Separate as ConvertFromAlphaRaw<A>>::convert_raw(raw, alpha);
+        ColorAlpha::from_raw(converted.extend(alpha))
+    }
+}
+
 impl<Spc: NonlinearColorSpace, A: AlphaState> ColorAlpha<Spc, A> {
     /// Convert `self` into the closest linear color space.
     pub fn linearize(self) -> ColorAlpha<Spc::LinearSpace, A> {
@@ -177,19 +239,51 @@ impl<Spc: NonlinearColorSpace, A: AlphaState> ColorAlpha<Spc, A> {
     }
 }
 
-impl<Spc> ColorAlpha<Spc, Separate> {
+impl<SrcSpace: EncodedColorSpace, A: AlphaState> ColorAlpha<SrcSpace, A> {
+    /// Decode `self` into its decoded ([working][WorkingColorSpace]) color space,
+    /// which allows many more operations to be performed.
+    pub fn decode(self) -> ColorAlpha<SrcSpace::DecodedSpace, A> {
+        let raw_xyz = <SrcSpace::DecodedSpace as ConvertFromRaw<SrcSpace>>::src_transform_raw(self.raw.xyz());
+        ColorAlpha::from_raw(raw_xyz.extend(self.raw.w))
+    }
+}
+
+impl<Spc, A> From<ColorAlpha<Spc, A>> for Color<Spc, Display>
+where
+    Spc: ColorSpace,
+    A: AlphaState,
+    Premultiplied: ConvertFromAlphaRaw<A>,
+{
+    fn from(c: ColorAlpha<Spc, A>) -> Self {
+        c.into_color()
+    }
+}
+
+impl<Spc, A> ColorAlpha<Spc, A> {
     /// Converts `self` to a [`Color`] by stripping off the alpha component.
     pub fn into_color_no_premultiply(self) -> Color<Spc, Display> {
         Color::from_raw(self.raw.xyz())
     }
+
 }
 
-impl<Spc> ColorAlpha<Spc, Premultiplied> {
-    /// Converts `self` to a [`Color`] by stripping off the alpha component.
+impl<Spc, A> ColorAlpha<Spc, A>
+where
+    Spc: ColorSpace,
+    A: AlphaState,
+    Premultiplied: ConvertFromAlphaRaw<A>,
+{
+    /// Converts `self` to a [`Color`] by first premultiplying `self` (if premultiplying makes sense for the current color space)
+    /// and then stripping off the alpha component.
     pub fn into_color(self) -> Color<Spc, Display> {
-        Color::from_raw(self.raw.xyz())
+        if Spc::SPACE != Spc::LinearSpace::SPACE {
+            Color::from_raw(self.convert_alpha::<Premultiplied>().raw.xyz())
+        } else {
+            Color::from_raw(self.raw.xyz())
+        }
     }
 }
+
 
 impl<Spc: AsU8Array, A: AlphaState> ColorAlpha<Spc, A> {
     /// Convert `self` to a `[u8; 4]`. All components of `self` *must* be in range `[0..1]`.

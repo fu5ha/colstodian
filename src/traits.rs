@@ -224,6 +224,21 @@ where
     type DstAlpha = DstAlpha;
 }
 
+// A trait implemented for different color blending interpolation functions, used in the
+/// [`Color::blend`] and [`ColorAlpha::blend`]/[`ColorAlpha::blend_color`] methods.
+pub trait ColorBlender {
+    type Params: Default + Copy;
+
+    /// Blend within the specified range with factor `factor` using specified parameters
+    fn blend_with(start: f32, end: f32, factor: f32, params: Self::Params) -> f32;
+
+    /// Blend within the specified range with factor `factor` using default parameters.
+    fn blend(start: f32, end: f32, factor: f32) -> f32
+    {
+        Self::blend_with(start, end, factor, Default::default())
+    }
+}
+
 /// An object-safe trait implemented by both [`Color`] and [`DynamicColor`].
 pub trait AnyColor {
     fn raw(&self) -> Vec3;
