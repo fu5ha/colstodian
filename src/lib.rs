@@ -205,18 +205,18 @@
 //! let cp = col.cp; // access Cp (Chroma-Protan) component through .cp
 //! ```
 //!
-//! One more quite useful tool is the [`ConvertTo`] trait. [`ConvertTo`] is
+//! One more quite useful tool is the [`ColorInto`] trait. [`ColorInto`] is
 //! a trait meant to be used as a replacement for [`Into`] in situations where you want
 //! to bound a type as being able to be converted into a specific type of color. A you can
-//! call [`.convert`][ConvertTo::convert] on a type that implements [`ConvertTo<T>`]
+//! call [`.into`][ColorInto::into] on a type that implements [`ColorInto<T>`]
 //! and you will get a `T`.
 //!
 //! This example snippet puts together much of what we've learned so far.
 //!
 //! ```rust
 //! # use colstodian::*;
-//! fn tint_color(input_color: impl ConvertTo<Color<AcesCg, Display>>) -> Color<AcesCg, Display> {
-//!     let color = input_color.convert();
+//! fn tint_color(input_color: impl ColorInto<Color<AcesCg, Display>>) -> Color<AcesCg, Display> {
+//!     let color = input_color.into();
 //!     let tint: Color<AcesCg, Display> = Color::new(0.5, 0.8, 0.4);
 //!     color * tint
 //! }
@@ -372,7 +372,7 @@ pub use color::{Color, ColorAlpha, DynamicColor, DynamicColorAlpha};
 
 /// The traits which form the backbone of the strongly-typed [`Color`] & [`ColorAlpha`].
 pub mod traits;
-pub use traits::{AlphaState, AnyColor, ColorSpace, ConvertTo, DynColor, State};
+pub use traits::{AlphaState, AnyColor, ColorSpace, ColorInto, DynColor, State};
 
 /// Error handling types.
 pub mod error;

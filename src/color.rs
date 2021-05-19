@@ -245,13 +245,13 @@ impl<Spc: AsU8Array> Color<Spc, Display> {
     }
 }
 
-impl<SrcSpace, DstSpace, St> ConvertTo<Color<DstSpace, St>> for Color<SrcSpace, St>
+impl<SrcSpace, DstSpace, St> ColorInto<Color<DstSpace, St>> for Color<SrcSpace, St>
 where
     DstSpace: ConvertFromRaw<SrcSpace>,
     SrcSpace: ColorSpace,
     St: State,
 {
-    fn convert(self) -> Color<DstSpace, St> {
+    fn into(self) -> Color<DstSpace, St> {
         self.convert()
     }
 }

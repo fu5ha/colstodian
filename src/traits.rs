@@ -90,8 +90,8 @@ impl<SrcSpace: ColorSpace, DstSpace: ConvertFromRaw<SrcSpace>> ConvertToRaw<DstS
 /// ```rust
 /// use colstodian::*;
 ///
-/// fn tint_color(input_color: impl ConvertTo<Color<AcesCg, Display>>) -> Color<AcesCg, Display> {
-///     let color = input_color.convert();
+/// fn tint_color(input_color: impl ColorInto<Color<AcesCg, Display>>) -> Color<AcesCg, Display> {
+///     let color = input_color.into();
 ///     let tint: Color<AcesCg, Display> = Color::new(0.5, 0.8, 0.4);
 ///     color * tint
 /// }
@@ -101,8 +101,8 @@ impl<SrcSpace: ColorSpace, DstSpace: ConvertFromRaw<SrcSpace>> ConvertToRaw<DstS
 ///
 /// println!("Pre-tint: {}, Post-tint: {}", color, tinted);
 /// ```
-pub trait ConvertTo<T> {
-    fn convert(self) -> T;
+pub trait ColorInto<T> {
+    fn into(self) -> T;
 }
 
 /// A type that implements this trait can be converted directly to and from

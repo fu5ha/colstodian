@@ -313,7 +313,7 @@ impl<Spc: AsU8Array, A: AlphaState> ColorAlpha<Spc, A> {
     }
 }
 
-impl<SrcSpace, DstSpace, SrcAlpha, DstAlpha> ConvertTo<ColorAlpha<DstSpace, DstAlpha>>
+impl<SrcSpace, DstSpace, SrcAlpha, DstAlpha> ColorInto<ColorAlpha<DstSpace, DstAlpha>>
     for ColorAlpha<SrcSpace, SrcAlpha>
 where
     DstSpace: ConvertFromRaw<SrcSpace>,
@@ -321,7 +321,7 @@ where
     DstAlpha: ConvertFromAlphaRaw<SrcAlpha> + AlphaState,
     SrcAlpha: AlphaState,
 {
-    fn convert(self) -> ColorAlpha<DstSpace, DstAlpha> {
+    fn into(self) -> ColorAlpha<DstSpace, DstAlpha> {
         self.convert()
     }
 }
