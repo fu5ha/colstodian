@@ -1,4 +1,4 @@
-use crate::{traits::*};
+use crate::traits::*;
 use crate::{
     error::{DowncastError, DynamicConversionError},
     tonemapper::Tonemapper,
@@ -183,12 +183,21 @@ impl<Spc: LinearColorSpace, SrcSt> Color<Spc, SrcSt> {
 
 impl<Spc: WorkingColorSpace, St> Color<Spc, St> {
     /// Blend `self`'s color values with the color values from `other` with default blender parameters. `factor` is in range [0..1].
-    pub fn blend<Blender: ColorBlender>(self, other: Color<Spc, St>, factor: f32) -> Color<Spc, St> {
+    pub fn blend<Blender: ColorBlender>(
+        self,
+        other: Color<Spc, St>,
+        factor: f32,
+    ) -> Color<Spc, St> {
         self.blend_with::<Blender>(other, factor, Default::default())
     }
 
     /// Blend `self`'s color values with the color values from `other` with given `params`. `factor` is in range [0..1].
-    pub fn blend_with<Blender: ColorBlender>(self, other: Color<Spc, St>, factor: f32, params: Blender::Params) -> Color<Spc, St> {
+    pub fn blend_with<Blender: ColorBlender>(
+        self,
+        other: Color<Spc, St>,
+        factor: f32,
+        params: Blender::Params,
+    ) -> Color<Spc, St> {
         let raw1 = self.raw;
         let raw2 = other.raw;
         let x = Blender::blend_with(raw1.x, raw2.x, factor, params);

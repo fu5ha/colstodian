@@ -233,8 +233,7 @@ pub trait ColorBlender {
     fn blend_with(start: f32, end: f32, factor: f32, params: Self::Params) -> f32;
 
     /// Blend within the specified range with factor `factor` using default parameters.
-    fn blend(start: f32, end: f32, factor: f32) -> f32
-    {
+    fn blend(start: f32, end: f32, factor: f32) -> f32 {
         Self::blend_with(start, end, factor, Default::default())
     }
 }

@@ -372,7 +372,7 @@ pub use color::{Color, ColorAlpha, DynamicColor, DynamicColorAlpha};
 
 /// The traits which form the backbone of the strongly-typed [`Color`] & [`ColorAlpha`].
 pub mod traits;
-pub use traits::{AlphaState, AnyColor, ColorSpace, ColorInto, DynColor, State};
+pub use traits::{AlphaState, AnyColor, ColorInto, ColorSpace, DynColor, State};
 
 /// Error handling types.
 pub mod error;

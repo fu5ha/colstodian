@@ -80,8 +80,7 @@ where
 /// Linearly interpolate between `range.start..=range.end` by `factor`.
 pub enum Linear {}
 
-impl ColorBlender for Linear 
-{
+impl ColorBlender for Linear {
     type Params = ();
 
     fn blend_with(start: f32, end: f32, factor: f32, _params: Self::Params) -> f32 {
@@ -103,7 +102,7 @@ impl BSplineParams {
     pub fn new(first_control_point_bias: f32, second_control_point_bias: f32) -> BSplineParams {
         // x / y = bias
         // x - y = 1.0
-        // -> 
+        // ->
         // y = x - 1
         // y(z - 1) = 1
         // y = 1 / (z - 1)
@@ -113,8 +112,10 @@ impl BSplineParams {
             (bias / bm1, 1.0 / bm1)
         }
 
-        let (prev_closer_control_point_weight, prev_further_control_point_weight) = calc_weights_from_bias(first_control_point_bias);
-        let (next_closer_control_point_weight, next_further_control_point_weight) = calc_weights_from_bias(second_control_point_bias);
+        let (prev_closer_control_point_weight, prev_further_control_point_weight) =
+            calc_weights_from_bias(first_control_point_bias);
+        let (next_closer_control_point_weight, next_further_control_point_weight) =
+            calc_weights_from_bias(second_control_point_bias);
 
         BSplineParams {
             prev_closer_control_point_weight,
@@ -136,13 +137,14 @@ impl Default for BSplineParams {
     }
 }
 
-impl ColorBlender for BSpline
-{
+impl ColorBlender for BSpline {
     type Params = BSplineParams;
-    
+
     fn blend_with(start: f32, end: f32, factor: f32, params: Self::Params) -> f32 {
-        let prev = params.prev_closer_control_point_weight * start - params.prev_further_control_point_weight * end;
-        let next = params.next_closer_control_point_weight * end - params.next_further_control_point_weight * start;
+        let prev = params.prev_closer_control_point_weight * start
+            - params.prev_further_control_point_weight * end;
+        let next = params.next_closer_control_point_weight * end
+            - params.next_further_control_point_weight * start;
 
         let t = factor;
         let t2 = t * t;
@@ -151,6 +153,7 @@ impl ColorBlender for BSpline
         ((1.0 - 3.0 * t + 3.0 * t2 - t3) * prev
             + (4.0 - 6.0 * t2 + 3.0 * t3) * start
             + (1.0 + 3.0 * t + 3.0 * t2 - 3.0 * t3) * end
-            + t3 * next) / 6.0
+            + t3 * next)
+            / 6.0
     }
 }
