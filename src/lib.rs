@@ -348,15 +348,20 @@ pub mod blenders;
 /// implementation of the [`ColorSpace`] trait on a specific color space struct.
 #[rustfmt::skip]
 pub mod spaces;
+#[doc(inline)]
 pub use spaces::DynamicColorSpace;
 pub use spaces::*;
 
 /// Contains types relating to a color's state.
 pub mod states;
+
+#[doc(inline)]
 pub use states::{Display, DynamicState, Scene};
 
 /// Contains types relating to a color's alpha state.
 pub mod alpha_states;
+
+#[doc(inline)]
 pub use alpha_states::{DynamicAlphaState, Premultiplied, Separate};
 
 /// Contains tonemappers, useful for mapping scene-referred HDR values into display-referred values
@@ -368,14 +373,20 @@ pub use component_structs::*;
 
 /// Contains color types and helper functions.
 pub mod color;
+
+#[doc(inline)]
 pub use color::{Color, ColorAlpha, DynamicColor, DynamicColorAlpha};
 
 /// The traits which form the backbone of the strongly-typed [`Color`] & [`ColorAlpha`].
 pub mod traits;
-pub use traits::{AlphaState, AnyColor, ColorInto, ColorSpace, DynColor, State};
+
+#[doc(inline)]
+pub use traits::{AlphaState, ColorInto, ColorSpace, State};
 
 /// Error handling types.
 pub mod error;
+
+#[doc(inline)]
 pub use error::{ColorError, ColorResult};
 
 #[cfg(test)]
