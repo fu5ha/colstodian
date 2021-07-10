@@ -116,12 +116,11 @@
 //!
 //! ```rust
 //! # use colstodian::*;
-//! use colstodian::blenders::Linear;
 //!
 //! let oklab1 = color::srgb_u8(128, 12, 57).convert::<Oklab>();
 //! let oklab2 = color::srgb_u8(25, 35, 68).convert::<Oklab>();
 //!
-//! let blended = oklab1.blend::<Linear>(oklab2, 0.5); // Blend half way between the two colors
+//! let blended = oklab1.blend(oklab2, 0.5); // Blend half way between the two colors
 //! ```
 //!
 //! This is also the first time we see the [`convert`][Color::convert] method, which we'll be using,
@@ -145,7 +144,7 @@
 //! let output_u8: [u8; 3] = output.to_u8();
 //! ```
 //!
-//! Here we can also see an example of where [`convert_to`][Color::convert_to] may be preferrable over
+//! Here we can see an example of where [`convert_to`][Color::convert_to] may be preferrable over
 //! [`convert`][Color::convert]. Notice how we are using the type [`Color<EncodedSrgb, Display>`] quite
 //! often? You might want to create a type alias for this type called, for example, `Asset`. Wouldn't it
 //! be convenient to also be able to `convert` to a type alias of [`Color`]? Well, with
@@ -155,7 +154,6 @@
 //!
 //! ```rust
 //! # use colstodian::*;
-//! # use colstodian::blenders::Linear;
 //! // You could have these defined and used throughout your codebase.
 //! type Perceptual = Color<Oklab, Display>;
 //! type Srgb = Color<EncodedSrgb, Display>;
@@ -163,7 +161,7 @@
 //! let color_1 = color::srgb_u8(128, 12, 57);
 //! let color_2 = color::srgb_u8(25, 35, 68);
 //!
-//! let blended_u8: [u8; 3] = color_1.convert_to::<Perceptual>().blend::<Linear>(
+//! let blended_u8: [u8; 3] = color_1.convert_to::<Perceptual>().blend(
 //!     color_2.convert_to::<Perceptual>(),
 //!     0.5
 //! ).convert_to::<Srgb>().to_u8();
@@ -286,18 +284,16 @@
 //! Now we need to do the opposite of what we did before and map the infinite dynamic range of a
 //! scene-referred color outputted by the renderer to the finite dynamic range which can be displayed
 //! on a display. For an output display which is "SDR" (i.e. not an HDR-enabled TV or monitor), a fairly
-//! aggressive S-curve style tonemap is a good option. We provide one in the form of the [`LottesTonemapper`][tonemapper::LottesTonemapper],
-//! which is a tonemapper inspired by [a talk given by AMD's Timothy Lottes](https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day).
-//! See the documentation for more information on why it is a good choice.
+//! aggressive S-curve style tonemap is a good option. We provide a couple of options in the [`tonemap`] module.
 //!
 //! ```rust
 //! # use colstodian::*;
 //! # let rendered_col = color::acescg::<Scene>(5.0, 4.0, 4.5);
-//! use tonemapper::{LottesTonemapper, LottesTonemapperParams};
+//! use tonemap::{Tonemapper, PerceptualTonemapper, PerceptualTonemapperParams};
 //!
-//! // In reality you would change the parameters to fit the scene here.
-//! let tonemapper = LottesTonemapper::new(LottesTonemapperParams::default());
-//! let tonemapped: Color<AcesCg, Display> = rendered_col.tonemap(tonemapper);
+//! // In theory you could change the parameters to taste here.
+//! let params = PerceptualTonemapperParams::default();
+//! let tonemapped: Color<AcesCg, Display> = PerceptualTonemapper::tonemap(rendered_col, params).convert();
 //! ```
 //!
 //! Now, our color is display-referred within a finite (`[0..1]`) dynamic range. However, we haven't chosen
@@ -338,9 +334,6 @@
 
 pub use kolor;
 
-/// Blenders used in places that require a [ColorBlender].
-pub mod blenders;
-
 /// Types representing different color spaces.
 ///
 /// For more information, see the documentation for the corresponding
@@ -366,7 +359,7 @@ pub use alpha_states::{DynamicAlphaState, Premultiplied, Separate};
 
 /// Contains tonemappers, useful for mapping scene-referred HDR values into display-referred values
 /// within the concrete dynamic range of a specific display.
-pub mod tonemapper;
+pub mod tonemap;
 
 pub mod component_structs;
 pub use component_structs::*;

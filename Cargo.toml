@@ -1,6 +1,6 @@
 [package]
 name = "colstodian"
-version = "0.1.0-rc.2"
+version = "0.1.0-rc.3"
 authors = ["Gray Olson <gray@grayolson.com>"]
 license = "MIT OR Apache-2.0 OR Zlib"
 edition = "2018"
@@ -15,17 +15,17 @@ features = ["std", "with-serde"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/state/manifest.html
 
 [dependencies]
-kolor = { version = "^0.1.5", default-features = false, features = ["f32", "color-matrices"] }
-# kolor = { version = "^0.1.4", default-features = false, features = ["f32", "color-matrices"], path = "../kolor/build/kolor" }
-glam = { version = "0.13.1", default-features = false, features = ["bytemuck"] } # keep in sync with kolor
+# kolor = { version = "^0.1.6", default-features = false, features = ["glam", "f32", "color-matrices"] }
+# kolor = { version = "^0.1.6", default-features = false, features = ["glam", "f32", "color-matrices"], path = "../kolor/build/kolor" }
+kolor = { version = "^0.1.6", default-features = false, features = ["glam", "f32", "color-matrices"], git = "https://github.com/termhn/kolor", branch = "glam-feature" }
+glam = { version = "0.17.1", default-features = false, features = ["bytemuck"] } # keep in sync with kolor
 serde = { version = "1", optional = true, features = ["derive"] }
 bytemuck = { version = "1.5.1" }
 num-traits = { version = "^0.2.14", optional = true, default-features = false }
-# cint = { path = "../cint", features = ["bytemuck"] }
 cint = { version = "^0.2.1", features = ["bytemuck"] }
 
 [features]
-default = ["std"]
+default = ["libm"]
 
 # enable support for the standard library
 std = ["kolor/std", "glam/std"]

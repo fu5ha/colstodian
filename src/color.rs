@@ -1,9 +1,8 @@
 use crate::traits::*;
 use crate::{
     error::{DowncastError, DynamicConversionError},
-    tonemapper::Tonemapper,
     AcesCg, ColorResult, Display, DynamicAlphaState, DynamicColorSpace, DynamicState, EncodedSrgb,
-    LinearSrgb, Scene, Separate,
+    LinearSrgb, Separate,
 };
 
 use glam::Vec3;
@@ -91,7 +90,7 @@ pub fn acescg<St: State>(r: f32, g: f32, b: f32) -> Color<AcesCg, St> {
 impl<SrcSpace: ColorSpace, St: State> Color<SrcSpace, St> {
     /// Converts `self` from one color space to another while retaining the same [`State`].
     ///
-    /// Be careful when converting between nonlinear color spaces while in [Scene] state
+    /// Be careful when converting between nonlinear color spaces while in [`Scene`][crate::Scene] state
     /// as the nonlinear transform functions for some color spaces are only defined within
     /// a specific dynamic range.
     pub fn convert<DstSpace: ConvertFromRaw<SrcSpace>>(self) -> Color<DstSpace, St> {
@@ -160,10 +159,10 @@ impl<Spc: LinearColorSpace, SrcSt> Color<Spc, SrcSt> {
     /// Converts this color from one state to another.
     ///
     /// This conversion is usecase and even instance dependent.
-    /// For example, converting a material's emissive texture value, a [`Display`]-referred color, to a [`Scene`]-referred
-    /// color might take the form of a multiplication which scales the power of said emission into [`Scene`]-referred irradiance. On the other hand,
-    /// converting a final [`Scene`]-referred color to a [`Display`]-referred color should be done with some kind of tonemapping
-    /// operator. For a built-in, configurable tonemapper, see [`Tonemapper`].
+    /// For example, converting a material's emissive texture value, a [`Display`]-referred color, to a [`Scene`][crate::Scene]-referred
+    /// color might take the form of a multiplication which scales the power of said emission into [`Scene`][crate::Scene]-referred irradiance. On the other hand,
+    /// converting a final [`Scene`][crate::Scene]-referred color to a [`Display`]-referred color should be done with some kind of tonemapping
+    /// operator. For more, see the [`tonemap`][crate::tonemap] module.
     ///
     /// Note that the conversion function gives a raw color value, as the state of the color during the intermediate steps of the conversion
     /// is not really well defined. Therefore it's easier to just work on the raw values without type safety.
@@ -182,36 +181,10 @@ impl<Spc: LinearColorSpace, SrcSt> Color<Spc, SrcSt> {
 }
 
 impl<Spc: WorkingColorSpace, St> Color<Spc, St> {
-    /// Blend `self`'s color values with the color values from `other` with default blender parameters. `factor` is in range [0..1].
-    pub fn blend<Blender: ColorBlender>(
-        self,
-        other: Color<Spc, St>,
-        factor: f32,
-    ) -> Color<Spc, St> {
-        self.blend_with::<Blender>(other, factor, Default::default())
-    }
-
-    /// Blend `self`'s color values with the color values from `other` with given `params`. `factor` is in range [0..1].
-    pub fn blend_with<Blender: ColorBlender>(
-        self,
-        other: Color<Spc, St>,
-        factor: f32,
-        params: Blender::Params,
-    ) -> Color<Spc, St> {
-        let raw1 = self.raw;
-        let raw2 = other.raw;
-        let x = Blender::blend_with(raw1.x, raw2.x, factor, params);
-        let y = Blender::blend_with(raw1.y, raw2.y, factor, params);
-        let z = Blender::blend_with(raw1.z, raw2.z, factor, params);
-        Color::from_raw(Vec3::new(x, y, z))
-    }
-}
-
-impl<Spc: LinearColorSpace> Color<Spc, Scene> {
-    /// Tonemap `self` using the `tonemapper`, converting `self` from being
-    /// scene-referred to being display-referred.
-    pub fn tonemap(self, tonemapper: impl Tonemapper) -> Color<Spc, Display> {
-        Color::from_raw(tonemapper.tonemap_raw(self.raw))
+    /// Blend `self`'s color values with the color values from `other` with linear interpolation. If `factor` is > 1.0,
+    /// results may not be sensical.
+    pub fn blend(self, other: Color<Spc, St>, factor: f32) -> Color<Spc, St> {
+        Color::from_raw(self.raw.lerp(other.raw, factor))
     }
 }
 
@@ -345,7 +318,7 @@ impl<Spc: ColorSpace, St: State> AnyColor for Color<Spc, St> {
 
 macro_rules! impl_op_color {
     ($op:ident, $op_func:ident) => {
-        impl<Spc: WorkingColorSpace, St> $op for Color<Spc, St> {
+        impl<Spc: LinearColorSpace, St> $op for Color<Spc, St> {
             type Output = Color<Spc, St>;
             fn $op_func(self, rhs: Color<Spc, St>) -> Self::Output {
                 Color::from_raw(self.raw.$op_func(rhs.raw))
@@ -356,14 +329,14 @@ macro_rules! impl_op_color {
 
 macro_rules! impl_op_color_float {
     ($op:ident, $op_func:ident) => {
-        impl<Spc: WorkingColorSpace, St> $op<f32> for Color<Spc, St> {
+        impl<Spc: LinearColorSpace, St> $op<f32> for Color<Spc, St> {
             type Output = Color<Spc, St>;
             fn $op_func(self, rhs: f32) -> Self::Output {
                 Color::from_raw(self.raw.$op_func(rhs))
             }
         }
 
-        impl<Spc: WorkingColorSpace, St> $op<Color<Spc, St>> for f32 {
+        impl<Spc: LinearColorSpace, St> $op<Color<Spc, St>> for f32 {
             type Output = Color<Spc, St>;
             fn $op_func(self, rhs: Color<Spc, St>) -> Self::Output {
                 Color::from_raw(self.$op_func(rhs.raw))
@@ -486,24 +459,6 @@ impl DynamicColor {
             space: spc.as_linear(),
             state: self.state,
         }
-    }
-
-    /// Tonemap `self` using the [`Tonemapper`] `tonemapper`, converting `self` from being
-    /// scene-referred to being display-referred.
-    pub fn tonemap(mut self, tonemapper: impl Tonemapper) -> ColorResult<Self> {
-        if self.state != DynamicState::Scene {
-            return Err(DynamicConversionError::TonemapInDisplayState.into());
-        }
-        if !self.space.is_linear() {
-            return Err(DynamicConversionError::StateChangeInNonlinearSpace(
-                self.space,
-                self.state,
-                DynamicState::Display,
-            )
-            .into());
-        }
-        self.raw = tonemapper.tonemap_raw(self.raw);
-        Ok(self)
     }
 
     /// Converts `self` to a [`DynamicColorAlpha`] with specified [`DynamicAlphaState`] by adding an alpha component.

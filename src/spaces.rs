@@ -4,7 +4,7 @@ use crate::{
     traits::*
 };
 
-use glam::{Vec3, Vec4, Mat3};
+use glam::{Vec3, Vec4};
 
 use core::ops::*;
 use core::fmt;
@@ -260,9 +260,7 @@ macro_rules! impl_conversion {
             }
             #[inline]
             fn linear_part_raw(color: Vec3) -> Vec3 {
-                let conversion_mat =
-                    Mat3::from_cols_array(&kolor::details::generated_matrices::$mat).transpose();
-                conversion_mat * color
+                kolor::details::generated_matrices::$mat * color
             }
             #[inline]
             fn dst_transform_raw(color: Vec3) -> Vec3 {
@@ -294,9 +292,7 @@ macro_rules! impl_conversion {
             }
             #[inline]
             fn linear_part_raw(color: Vec3) -> Vec3 {
-                let conversion_mat =
-                    Mat3::from_cols_array(&kolor::details::generated_matrices::$mat).transpose();
-                conversion_mat * color
+                kolor::details::generated_matrices::$mat * color
             }
             #[inline]
             fn dst_transform_raw(color: Vec3) -> Vec3 {
@@ -312,9 +308,7 @@ macro_rules! impl_conversion {
             }
             #[inline]
             fn linear_part_raw(color: Vec3) -> Vec3 {
-                let conversion_mat =
-                    Mat3::from_cols_array(&kolor::details::generated_matrices::$mat).transpose();
-                conversion_mat * color
+                kolor::details::generated_matrices::$mat * color
             }
             #[inline]
             fn dst_transform_raw(color: Vec3) -> Vec3 {
@@ -346,9 +340,7 @@ macro_rules! impl_conversion {
             }
             #[inline]
             fn linear_part_raw(color: Vec3) -> Vec3 {
-                let conversion_mat =
-                    Mat3::from_cols_array(&kolor::details::generated_matrices::$mat).transpose();
-                conversion_mat * color
+                kolor::details::generated_matrices::$mat * color
             }
             #[inline]
             fn dst_transform_raw(color: Vec3) -> Vec3 {

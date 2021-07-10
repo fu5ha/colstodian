@@ -165,52 +165,22 @@ where
 
 impl<Spc: WorkingColorSpace> ColorAlpha<Spc, Separate> {
     /// Blend `self`'s color values with the color values from `other`. Does not blend alpha.
-    pub fn blend<Blender: ColorBlender>(
-        self,
-        other: ColorAlpha<Spc, Separate>,
-        factor: f32,
-    ) -> ColorAlpha<Spc, Separate> {
-        self.blend_with::<Blender>(other, factor, Default::default())
+    pub fn blend(self, other: ColorAlpha<Spc, Separate>, factor: f32) -> ColorAlpha<Spc, Separate> {
+        ColorAlpha::from_raw(
+            self.raw
+                .xyz()
+                .lerp(other.raw.xyz(), factor)
+                .extend(self.raw.w),
+        )
     }
 
     /// Blend `self`'s color values with the color values from `other`. Also blends alpha.
-    pub fn blend_alpha<Blender: ColorBlender>(
+    pub fn blend_alpha(
         self,
         other: ColorAlpha<Spc, Separate>,
         factor: f32,
     ) -> ColorAlpha<Spc, Separate> {
-        self.blend_alpha_with::<Blender>(other, factor, Default::default())
-    }
-
-    /// Blend `self`'s color values with the color values from `other`. Does not blend alpha.
-    pub fn blend_with<Blender: ColorBlender>(
-        self,
-        other: ColorAlpha<Spc, Separate>,
-        factor: f32,
-        params: Blender::Params,
-    ) -> ColorAlpha<Spc, Separate> {
-        let raw1 = self.raw;
-        let raw2 = other.raw;
-        let x = Blender::blend_with(raw1.x, raw2.x, factor, params);
-        let y = Blender::blend_with(raw1.y, raw2.y, factor, params);
-        let z = Blender::blend_with(raw1.z, raw2.z, factor, params);
-        ColorAlpha::from_raw(Vec4::new(x, y, z, raw1.w))
-    }
-
-    /// Blend `self`'s color values with the color values from `other`. Also blends alpha.
-    pub fn blend_alpha_with<Blender: ColorBlender>(
-        self,
-        other: ColorAlpha<Spc, Separate>,
-        factor: f32,
-        params: Blender::Params,
-    ) -> ColorAlpha<Spc, Separate> {
-        let raw1 = self.raw;
-        let raw2 = other.raw;
-        let x = Blender::blend_with(raw1.x, raw2.x, factor, params);
-        let y = Blender::blend_with(raw1.y, raw2.y, factor, params);
-        let z = Blender::blend_with(raw1.z, raw2.z, factor, params);
-        let a = Blender::blend_with(raw1.w, raw2.w, factor, params);
-        ColorAlpha::from_raw(Vec4::new(x, y, z, a))
+        ColorAlpha::from_raw(self.raw.lerp(other.raw, factor))
     }
 }
 
