@@ -32,6 +32,7 @@ where
     type DstAlpha = Self;
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl fmt::Display for Premultiplied {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Premultiplied")
@@ -68,6 +69,7 @@ where
     type DstAlpha = Self;
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl fmt::Display for Separate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Separate")
@@ -75,8 +77,9 @@ impl fmt::Display for Separate {
 }
 
 /// A dynamic version of a color's alpha state. See docs for [`AlphaState`]
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub enum DynamicAlphaState {
     /// See docs for [`Premultiplied`]
     Premultiplied,

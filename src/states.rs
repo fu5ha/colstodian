@@ -15,6 +15,7 @@ impl State for Scene {
     const STATE: DynamicState = DynamicState::Scene;
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl fmt::Display for Scene {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Scene")
@@ -30,6 +31,7 @@ impl State for Display {
     const STATE: DynamicState = DynamicState::Display;
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl fmt::Display for Display {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Display")
@@ -37,8 +39,9 @@ impl fmt::Display for Display {
 }
 
 /// A dynamic version of a color's state. See docs for [`State`]
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub enum DynamicState {
     /// See docs for [`Scene`]
     Scene,

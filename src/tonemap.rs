@@ -3,6 +3,9 @@ use crate::{
     Color, ColorInto, ColorSpace, Display, Scene,
 };
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use glam::{Vec3, Vec3Swizzles};
 #[cfg(all(not(feature = "std"), feature = "libm"))]
 use num_traits::Float;
@@ -20,7 +23,9 @@ pub trait Tonemapper {
     ) -> Color<Self::OutputSpace, Display>;
 }
 
+#[repr(C)]
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct PerceptualTonemapperParams {
     /// The maximum desaturation for highlights. 0.0 is fully desaturated, 1.0 is no desaturation.
     pub desaturation: f32,
@@ -28,7 +33,9 @@ pub struct PerceptualTonemapperParams {
     pub crosstalk: f32,
 }
 
+#[cfg(feature = "bytemuck")]
 unsafe impl bytemuck::Pod for PerceptualTonemapperParams {}
+#[cfg(feature = "bytemuck")]
 unsafe impl bytemuck::Zeroable for PerceptualTonemapperParams {}
 
 impl Default for PerceptualTonemapperParams {
@@ -83,7 +90,9 @@ impl Tonemapper for PerceptualTonemapper {
 }
 
 /// Parameters for the [`LottesTonemapper`]
+#[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct LottesTonemapperParams {
     /// Controls the strength of the toe and shoulder rolloff
     pub contrast: f32,
@@ -103,7 +112,9 @@ pub struct LottesTonemapperParams {
     pub cross_saturation: f32,
 }
 
+#[cfg(feature = "bytemuck")]
 unsafe impl bytemuck::Pod for LottesTonemapperParams {}
+#[cfg(feature = "bytemuck")]
 unsafe impl bytemuck::Zeroable for LottesTonemapperParams {}
 
 impl Default for LottesTonemapperParams {
@@ -133,7 +144,9 @@ pub struct BakedLottesTonemapperParams {
     cross_saturation: f32,
 }
 
+#[cfg(feature = "bytemuck")]
 unsafe impl bytemuck::Pod for BakedLottesTonemapperParams {}
+#[cfg(feature = "bytemuck")]
 unsafe impl bytemuck::Zeroable for BakedLottesTonemapperParams {}
 
 impl From<LottesTonemapperParams> for BakedLottesTonemapperParams {

@@ -3,12 +3,19 @@ use core::marker::PhantomData;
 use core::ops::*;
 
 use crate::{
-    error::DowncastError, traits::*, ColAlpha, Color, ColorResult, Display, DynamicAlphaState,
-    DynamicColor, DynamicColorSpace, DynamicState, EncodedSrgb, LinearSrgb, Premultiplied,
+    traits::*, ColAlpha, Color, Display, DynamicAlphaState,
+    DynamicColorSpace, DynamicState, EncodedSrgb, LinearSrgb, Premultiplied,
     Separate,
 };
 
-use glam::{Vec4, Vec4Swizzles};
+#[cfg(not(target_arch = "spirv"))]
+use crate::{
+    ColorResult,
+    DynamicColor,
+    error::DowncastError,
+};
+
+use glam::{Vec4, Vec4Swizzles, const_vec4};
 #[cfg(all(not(feature = "std"), feature = "libm"))]
 use num_traits::Float;
 #[cfg(feature = "serde")]
@@ -20,11 +27,34 @@ use serde::{Deserialize, Serialize};
 /// linear [0..1].
 ///
 /// See crate-level docs as well as [`ColorSpace`] and [`AlphaState`] for more.
-#[repr(C)]
+#[repr(transparent)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ColorAlpha<Spc, A> {
     /// The raw values of the color. Be careful when modifying this directly.
     pub raw: Vec4,
     _pd: PhantomData<(Spc, A)>,
+}
+
+#[macro_export]
+macro_rules! const_color_alpha {
+    ($el1:expr, $el2:expr, $el3:expr, $alpha:expr) => {
+        ColorAlpha {
+            raw: const_vec4!([$el1, $el2, $el3, $alpha]),
+            _pd: PhantomData
+        }
+    }
+}
+
+impl<Spc, A> From<[f32; 4]> for ColorAlpha<Spc, A> {
+    fn from(color: [f32; 4]) -> Self {
+        Self::new(color[0], color[1], color[2], color[3])
+    }
+}
+
+impl<Spc, A> AsRef<[f32; 4]> for ColorAlpha<Spc, A> {
+    fn as_ref(&self) -> &[f32; 4] {
+        self.raw.as_ref()
+    }
 }
 
 impl<Spc, A> ColorAlpha<Spc, A> {
@@ -32,6 +62,12 @@ impl<Spc, A> ColorAlpha<Spc, A> {
     #[inline]
     pub fn new(el1: f32, el2: f32, el3: f32, alpha: f32) -> Self {
         Self::from_raw(Vec4::new(el1, el2, el3, alpha))
+    }
+
+    /// Creates a [`ColorAlpha`] with the internal color elements all set to `el`.
+    #[inline]
+    pub fn splat(el: f32) -> Self {
+        Self::from_raw(Vec4::splat(el))
     }
 
     /// Creates a [`ColorAlpha`] with raw values contained in `raw`.
@@ -58,6 +94,9 @@ impl<Spc, A> ColorAlpha<Spc, A> {
     pub fn min_element(self) -> f32 {
         self.raw.min_element()
     }
+
+    pub const ZERO: Self = const_color_alpha!(0.0, 0.0, 0.0, 0.0);
+    pub const ONE: Self = const_color_alpha!(1.0, 1.0, 1.0, 1.0);
 }
 
 /// Creates a [`ColorAlpha`] in the [`EncodedSrgb`] color space with components `r`, `g`, `b`, and `a`.
@@ -68,6 +107,7 @@ pub fn srgba<A: AlphaState>(r: f32, g: f32, b: f32, a: f32) -> ColorAlpha<Encode
 
 /// Creates a [`ColorAlpha`] in the [`EncodedSrgb`] color space with components `r`, `g`, `b`, and `a`.
 #[inline]
+#[cfg(not(target_arch = "spirv"))]
 pub fn srgba_u8<A: AlphaState>(r: u8, g: u8, b: u8, a: u8) -> ColorAlpha<EncodedSrgb, A> {
     ColorAlpha::from_u8([r, g, b, a])
 }
@@ -215,6 +255,7 @@ where
 
 impl<Spc: NonlinearColorSpace, A: AlphaState> ColorAlpha<Spc, A> {
     /// Convert `self` into the closest linear color space.
+    #[cfg(not(target_arch = "spirv"))]
     pub fn linearize(self) -> ColorAlpha<Spc::LinearSpace, A> {
         use kolor::details::{color::TransformFn, transform::ColorTransform};
         let spc = Spc::SPACE;
@@ -272,6 +313,7 @@ where
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<Spc: AsU8Array, A: AlphaState> ColorAlpha<Spc, A> {
     /// Convert `self` to a `[u8; 4]`. All components of `self` *must* be in range `[0..1]`.
     pub fn to_u8(self) -> [u8; 4] {
@@ -313,10 +355,12 @@ where
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<Spc, A> fmt::Display for ColorAlpha<Spc, A>
 where
-    Spc: ColorSpace,
-    A: AlphaState,
+    Spc: ColorSpace + fmt::Display,
+    Spc::ComponentStruct: fmt::Display,
+    A: AlphaState + fmt::Display,
     ColorAlpha<Spc, A>: Deref<Target = ColAlpha<Spc::ComponentStruct>>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -330,10 +374,12 @@ where
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<Spc, A> fmt::Debug for ColorAlpha<Spc, A>
 where
-    Spc: ColorSpace,
-    A: AlphaState,
+    Spc: ColorSpace + fmt::Display,
+    Spc::ComponentStruct: fmt::Display,
+    A: AlphaState + fmt::Display,
     ColorAlpha<Spc, A>: Deref<Target = ColAlpha<Spc::ComponentStruct>>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -355,8 +401,11 @@ impl<Spc, A> PartialEq for ColorAlpha<Spc, A> {
     }
 }
 
+#[cfg(feature = "bytemuck")]
 unsafe impl<Spc, A> bytemuck::Zeroable for ColorAlpha<Spc, A> {}
+#[cfg(feature = "bytemuck")]
 unsafe impl<Spc, A> bytemuck::TransparentWrapper<Vec4> for ColorAlpha<Spc, A> {}
+#[cfg(feature = "bytemuck")]
 unsafe impl<Spc: 'static, A: 'static> bytemuck::Pod for ColorAlpha<Spc, A> {}
 
 macro_rules! impl_op_color {
@@ -365,6 +414,29 @@ macro_rules! impl_op_color {
             type Output = ColorAlpha<Spc, A>;
             fn $op_func(self, rhs: ColorAlpha<Spc, A>) -> Self::Output {
                 ColorAlpha::from_raw(self.raw.$op_func(rhs.raw))
+            }
+        }
+
+        impl<Spc: LinearColorSpace, A> $op<Vec4> for ColorAlpha<Spc, A> {
+            type Output = ColorAlpha<Spc, A>;
+            fn $op_func(self, rhs: Vec4) -> Self::Output {
+                ColorAlpha::from_raw(self.raw.$op_func(rhs))
+            }
+        }
+    };
+}
+
+macro_rules! impl_binop_color {
+    ($op:ident, $op_func:ident) => {
+        impl<Spc: LinearColorSpace, A> $op for ColorAlpha<Spc, A> {
+            fn $op_func(&mut self, rhs: ColorAlpha<Spc, A>) {
+                self.raw.$op_func(rhs.raw)
+            }
+        }
+
+        impl<Spc: LinearColorSpace, A> $op<Vec4> for ColorAlpha<Spc, A> {
+            fn $op_func(&mut self, rhs: Vec4) {
+                self.raw.$op_func(rhs)
             }
         }
     };
@@ -393,6 +465,11 @@ impl_op_color!(Sub, sub);
 impl_op_color!(Mul, mul);
 impl_op_color!(Div, div);
 
+impl_binop_color!(AddAssign, add_assign);
+impl_binop_color!(SubAssign, sub_assign);
+impl_binop_color!(MulAssign, mul_assign);
+impl_binop_color!(DivAssign, div_assign);
+
 impl_op_color_float!(Mul, mul);
 impl_op_color_float!(Div, div);
 
@@ -402,6 +479,7 @@ impl_op_color_float!(Div, div);
 /// See [`ColorAlpha`], [`ColorSpace`] and [`AlphaState`] for more.
 #[derive(Copy, Clone, PartialEq, Debug)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+#[cfg(not(target_arch = "spirv"))]
 pub struct DynamicColorAlpha {
     /// The raw tristimulus value of the color. Be careful when modifying this directly, i.e.
     /// don't multiply two Colors' raw values unless they are in the same color space and state.
@@ -410,6 +488,7 @@ pub struct DynamicColorAlpha {
     pub alpha_state: DynamicAlphaState,
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl DynamicColorAlpha {
     /// Create a new [`DynamicColorAlpha`] with specified raw color components, color space, and alpha state.
     pub fn new(raw: Vec4, space: DynamicColorSpace, alpha_state: DynamicAlphaState) -> Self {
@@ -498,12 +577,14 @@ impl DynamicColorAlpha {
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<'a> From<&'a dyn AnyColorAlpha> for DynamicColorAlpha {
     fn from(color: &'a dyn AnyColorAlpha) -> DynamicColorAlpha {
         color.dynamic()
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<C: AnyColorAlpha> DynColorAlpha for C {
     /// Attempt to convert to a typed [`ColorAlpha`]. Returns an error if `self`'s color space and alpha state do not match
     /// the given types.

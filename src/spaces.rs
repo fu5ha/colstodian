@@ -66,6 +66,7 @@ macro_rules! impl_color_space_inner {
             }
         }
 
+        #[cfg(not(target_arch = "spirv"))]
         impl fmt::Display for $space {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 write!(f, $display)
@@ -108,37 +109,40 @@ macro_rules! impl_color_space_inner {
 
         $(impl From<cint::$cint_ty<f32>> for Color<$space, Display> {
             fn from(color: cint::$cint_ty<f32>) -> Color<$space, Display> {
-                bytemuck::cast(color)
+                let arr: [f32; 3] = color.into();
+                Color::from(arr)
             }
         }
 
         impl From<Color<$space, Display>> for cint::$cint_ty<f32> {
             fn from(color: Color<$space, Display>) -> cint::$cint_ty<f32> {
-                bytemuck::cast(color)
+                From::from(*color.as_ref())
             }
         }
 
         impl From<cint::Alpha<cint::$cint_ty<f32>>> for ColorAlpha<$space, Separate> {
             fn from(color: cint::Alpha<cint::$cint_ty<f32>>) -> ColorAlpha<$space, Separate> {
-                bytemuck::cast(color)
+                let arr: [f32; 4] = color.into();
+                ColorAlpha::from(arr)
             }
         }
 
         impl From<ColorAlpha<$space, Separate>> for cint::Alpha<cint::$cint_ty<f32>> {
             fn from(color: ColorAlpha<$space, Separate>) -> cint::Alpha<cint::$cint_ty<f32>> {
-                bytemuck::cast(color)
+                From::from(*color.as_ref())
             }
         }
 
         impl From<cint::PremultipliedAlpha<cint::$cint_ty<f32>>> for ColorAlpha<$space, Premultiplied> {
             fn from(color: cint::PremultipliedAlpha<cint::$cint_ty<f32>>) -> ColorAlpha<$space, Premultiplied> {
-                bytemuck::cast(color)
+                let arr: [f32; 4] = color.into();
+                ColorAlpha::from(arr)
             }
         }
 
         impl From<ColorAlpha<$space, Premultiplied>> for cint::PremultipliedAlpha<cint::$cint_ty<f32>> {
             fn from(color: ColorAlpha<$space, Premultiplied>) -> cint::PremultipliedAlpha<cint::$cint_ty<f32>> {
-                bytemuck::cast(color)
+                From::from(*color.as_ref())
             }
         }
 
@@ -350,6 +354,7 @@ macro_rules! impl_conversion {
     };
 }
 
+#[cfg(not(target_arch = "spirv"))]
 macro_rules! impl_as_u8_array {
     ($space:ident: $cint_ty:ident) => {
         impl AsU8Array for $space {}
@@ -446,6 +451,7 @@ impl_color_space! {
     Encodes from LinearSrgb,
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl_as_u8_array!(EncodedSrgb: EncodedSrgb);
 
 impl_conversion!(EncodedSrgb to LinearSrgb => sRGB_eotf, None, None);

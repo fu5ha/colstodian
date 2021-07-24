@@ -1,11 +1,16 @@
 use crate::traits::*;
 use crate::{
-    error::{DowncastError, DynamicConversionError},
-    AcesCg, ColorResult, Display, DynamicAlphaState, DynamicColorSpace, DynamicState, EncodedSrgb,
+    AcesCg, Display, DynamicAlphaState, DynamicColorSpace, DynamicState, EncodedSrgb,
     LinearSrgb, Separate,
 };
 
-use glam::Vec3;
+#[cfg(not(target_arch = "spirv"))]
+use crate::{
+    error::{DowncastError, DynamicConversionError},
+    ColorResult,
+};
+
+use glam::{Vec3, const_vec3};
 #[cfg(all(not(feature = "std"), feature = "libm"))]
 use num_traits::Float;
 #[cfg(feature = "serde")]
@@ -16,16 +21,40 @@ use core::marker::PhantomData;
 use core::ops::*;
 
 mod color_alpha;
-pub use color_alpha::{linear_srgba, srgba, srgba_u8, ColorAlpha, DynamicColorAlpha};
+
+pub use color_alpha::{linear_srgba, srgba, ColorAlpha};
+
+#[cfg(not(target_arch = "spirv"))]
+pub use color_alpha::{DynamicColorAlpha, srgba_u8};
 
 /// A strongly typed color, parameterized by a color space and state.
 ///
 /// See crate-level docs as well as [`ColorSpace`] and [`State`] for more.
 #[repr(transparent)]
+#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct Color<Spc, St> {
     /// The raw values of the color. Be careful when modifying this directly.
     pub raw: Vec3,
     _pd: PhantomData<(Spc, St)>,
+}
+
+#[macro_export]
+macro_rules! const_color {
+    ($el1:expr, $el2:expr, $el3:expr) => {
+        Color::from_raw(const_vec3!([$el1, $el2, $el3]))
+    }
+}
+
+impl<Spc, St> From<[f32; 3]> for Color<Spc, St> {
+    fn from(color: [f32; 3]) -> Self {
+        Self::new(color[0], color[1], color[2])
+    }
+}
+
+impl<Spc, St> AsRef<[f32; 3]> for Color<Spc, St> {
+    fn as_ref(&self) -> &[f32; 3] {
+        self.raw.as_ref()
+    }
 }
 
 impl<Spc, St> Color<Spc, St> {
@@ -33,6 +62,12 @@ impl<Spc, St> Color<Spc, St> {
     #[inline]
     pub fn new(el1: f32, el2: f32, el3: f32) -> Self {
         Self::from_raw(Vec3::new(el1, el2, el3))
+    }
+
+    /// Creates a [`Color`] with the internal color elements all set to `el`.
+    #[inline]
+    pub fn splat(el: f32) -> Self {
+        Self::from_raw(Vec3::splat(el))
     }
 
     /// Creates a [`Color`] with raw values contained in `raw`.
@@ -53,6 +88,9 @@ impl<Spc, St> Color<Spc, St> {
     pub fn min_element(self) -> f32 {
         self.raw.min_element()
     }
+
+    pub const ZERO: Self = const_color!(0.0, 0.0, 0.0);
+    pub const ONE: Self = const_color!(1.0, 1.0, 1.0);
 }
 
 impl<Spc: WorkingColorSpace, St> Color<Spc, St> {
@@ -71,6 +109,7 @@ pub fn srgb(r: f32, g: f32, b: f32) -> Color<EncodedSrgb, Display> {
 
 /// Creates a [`Color`] in the [`EncodedSrgb`] color space with components `r`, `g`, and `b`.
 #[inline]
+#[cfg(not(target_arch = "spirv"))]
 pub fn srgb_u8(r: u8, g: u8, b: u8) -> Color<EncodedSrgb, Display> {
     Color::from_u8([r, g, b])
 }
@@ -201,6 +240,7 @@ impl<Spc: ColorSpace> Color<Spc, Display> {
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<Spc: AsU8Array> Color<Spc, Display> {
     /// Convert `self` to a `[u8; 3]`. All components of `self` will be clamped to range `[0..1]`.
     pub fn to_u8(self) -> [u8; 3] {
@@ -238,6 +278,7 @@ where
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<Spc: ColorSpace, St: State> From<Color<Spc, St>> for DynamicColor {
     fn from(color: Color<Spc, St>) -> DynamicColor {
         color.dynamic()
@@ -267,14 +308,19 @@ impl<Spc, St> PartialEq for Color<Spc, St> {
     }
 }
 
+#[cfg(feature = "bytemuck")]
 unsafe impl<Spc, St> bytemuck::Zeroable for Color<Spc, St> {}
+#[cfg(feature = "bytemuck")]
 unsafe impl<Spc, St> bytemuck::TransparentWrapper<Vec3> for Color<Spc, St> {}
+#[cfg(feature = "bytemuck")]
 unsafe impl<Spc: 'static, St: 'static> bytemuck::Pod for Color<Spc, St> {}
 
+#[cfg(not(target_arch = "spirv"))]
 impl<Spc, St> fmt::Display for Color<Spc, St>
 where
-    Spc: ColorSpace,
-    St: State,
+    Spc: ColorSpace + fmt::Display,
+    Spc::ComponentStruct: fmt::Display,
+    St: State + fmt::Display,
     Color<Spc, St>: Deref<Target = Spc::ComponentStruct>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -288,10 +334,12 @@ where
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<Spc, St> fmt::Debug for Color<Spc, St>
 where
-    Spc: ColorSpace,
-    St: State,
+    Spc: ColorSpace + fmt::Display,
+    Spc::ComponentStruct: fmt::Display,
+    St: State + fmt::Display,
     Color<Spc, St>: Deref<Target = Spc::ComponentStruct>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -299,6 +347,7 @@ where
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<Spc: ColorSpace, St: State> AnyColor for Color<Spc, St> {
     #[inline]
     fn space(&self) -> DynamicColorSpace {
@@ -322,6 +371,29 @@ macro_rules! impl_op_color {
             type Output = Color<Spc, St>;
             fn $op_func(self, rhs: Color<Spc, St>) -> Self::Output {
                 Color::from_raw(self.raw.$op_func(rhs.raw))
+            }
+        }
+
+        impl<Spc: LinearColorSpace, St> $op<Vec3> for Color<Spc, St> {
+            type Output = Color<Spc, St>;
+            fn $op_func(self, rhs: Vec3) -> Self::Output {
+                Color::from_raw(self.raw.$op_func(rhs))
+            }
+        }
+    };
+}
+
+macro_rules! impl_binop_color {
+    ($op:ident, $op_func:ident) => {
+        impl<Spc: LinearColorSpace, St> $op for Color<Spc, St> {
+            fn $op_func(&mut self, rhs: Color<Spc, St>) {
+                self.raw.$op_func(rhs.raw);
+            }
+        }
+
+        impl<Spc: LinearColorSpace, St> $op<Vec3> for Color<Spc, St> {
+            fn $op_func(&mut self, rhs: Vec3) {
+                self.raw.$op_func(rhs);
             }
         }
     };
@@ -350,6 +422,11 @@ impl_op_color!(Sub, sub);
 impl_op_color!(Mul, mul);
 impl_op_color!(Div, div);
 
+impl_binop_color!(AddAssign, add_assign);
+impl_binop_color!(SubAssign, sub_assign);
+impl_binop_color!(MulAssign, mul_assign);
+impl_binop_color!(DivAssign, div_assign);
+
 impl_op_color_float!(Mul, mul);
 impl_op_color_float!(Div, div);
 
@@ -359,6 +436,7 @@ impl_op_color_float!(Div, div);
 /// See [`Color`], [`ColorSpace`] and [`State`] for more.
 #[derive(Copy, Clone, PartialEq, Debug)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+#[cfg(not(target_arch = "spirv"))]
 pub struct DynamicColor {
     /// The raw tristimulus value of the color. Be careful when modifying this directly, i.e.
     /// don't multiply two Colors' raw values unless they are in the same color space and state.
@@ -367,6 +445,7 @@ pub struct DynamicColor {
     pub state: DynamicState,
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl AnyColor for DynamicColor {
     #[inline]
     fn space(&self) -> DynamicColorSpace {
@@ -384,6 +463,7 @@ impl AnyColor for DynamicColor {
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl DynamicColor {
     /// Create a new [`DynamicColor`] with specified raw color components, color space, and state.
     pub fn new(raw: Vec3, space: DynamicColorSpace, state: DynamicState) -> Self {
@@ -475,6 +555,7 @@ impl DynamicColor {
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl From<DynamicColor> for kolor::Color {
     fn from(color: DynamicColor) -> kolor::Color {
         kolor::Color {
@@ -484,6 +565,7 @@ impl From<DynamicColor> for kolor::Color {
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<C: AnyColor> DynColor for C {
     /// Attempt to convert to a typed `Color`. Returns an error if `self`'s color space and state do not match
     /// the given types.

@@ -365,10 +365,15 @@ pub mod component_structs;
 pub use component_structs::*;
 
 /// Contains color types and helper functions.
+#[macro_use]
 pub mod color;
 
 #[doc(inline)]
-pub use color::{Color, ColorAlpha, DynamicColor, DynamicColorAlpha};
+pub use color::{Color, ColorAlpha};
+
+#[cfg(not(target_arch = "spirv"))]
+#[doc(inline)]
+pub use color::{DynamicColor, DynamicColorAlpha};
 
 /// The traits which form the backbone of the strongly-typed [`Color`] & [`ColorAlpha`].
 pub mod traits;
@@ -377,9 +382,11 @@ pub mod traits;
 pub use traits::{AlphaState, ColorInto, ColorSpace, State};
 
 /// Error handling types.
+#[cfg(not(target_arch = "spirv"))]
 pub mod error;
 
 #[doc(inline)]
+#[cfg(not(target_arch = "spirv"))]
 pub use error::{ColorError, ColorResult};
 
 #[cfg(test)]

@@ -15,12 +15,14 @@ pub struct ColAlpha<T> {
     pub alpha: f32,
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<T: fmt::Display> fmt::Display for ColAlpha<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}, Alpha: {}", self.col, self.alpha)
     }
 }
 
+#[cfg(feature = "bytemuck")]
 macro_rules! impl_bytemuck {
     ($($inner:ident),+) => {
         $(
@@ -33,6 +35,7 @@ macro_rules! impl_bytemuck {
     }
 }
 
+#[cfg(feature = "bytemuck")]
 impl_bytemuck!(Rgb, ICtCp, Xyz, Lab, LCh);
 
 /// A bag of components with names R, G, B. Some `Color`s with RGB color spaces
@@ -45,6 +48,7 @@ pub struct Rgb {
     pub b: f32,
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl fmt::Display for Rgb {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "R: {}, G: {}, B: {}", self.r, self.g, self.b)
@@ -61,6 +65,7 @@ pub struct ICtCp {
     pub cp: f32,
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl fmt::Display for ICtCp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "I: {}, Ct: {}, Cp: {}", self.i, self.ct, self.cp)
@@ -77,6 +82,7 @@ pub struct Xyz {
     pub z: f32,
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl fmt::Display for Xyz {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "X: {}, Y: {}, Z: {}", self.x, self.y, self.z)
@@ -94,6 +100,7 @@ pub struct Lab {
     pub b: f32,
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl fmt::Display for Lab {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "L: {}, a: {}, b: {}", self.l, self.a, self.b)
@@ -111,6 +118,7 @@ pub struct LCh {
     pub h: f32,
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl fmt::Display for LCh {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "L: {}, C: {}, h: {}", self.l, self.c, self.h)

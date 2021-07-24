@@ -1,15 +1,16 @@
 use crate::{
-    Color, ColorAlpha, ColorResult, DynamicAlphaState, DynamicColor, DynamicColorAlpha,
+    Color, ColorAlpha, DynamicAlphaState,
     DynamicColorSpace, DynamicState, Premultiplied, Separate,
 };
 
-use glam::{Vec3, Vec4};
+#[cfg(not(target_arch = "spirv"))]
+use crate::{ColorResult, DynamicColor, DynamicColorAlpha};
 
-use core::fmt;
+use glam::{Vec3, Vec4};
 
 /// A type that implements ColorSpace represents a specific color space. See the documentation
 /// of [`DynamicColorSpace`] for more information about what a color space is.
-pub trait ColorSpace: Default + fmt::Display {
+pub trait ColorSpace: Default {
     /// The [`DynamicColorSpace`] that this type represents.
     const SPACE: DynamicColorSpace;
 
@@ -17,7 +18,7 @@ pub trait ColorSpace: Default + fmt::Display {
     type LinearSpace: LinearColorSpace + ConvertFromRaw<Self>;
 
     /// The 'bag of components' that this color space uses.
-    type ComponentStruct: Clone + Copy + fmt::Display;
+    type ComponentStruct: Clone + Copy;
 }
 
 /// Marks a type as representing a linear color space.
@@ -128,7 +129,7 @@ pub trait AsU8Array {}
 /// quantities, which we refer to as State. Colors which are defined in relation to display
 /// characteristic are called [`Display`][crate::Display]-referred, while color spaces which are defined in relation to input
 /// devices (scenes) are [`Scene`][crate::Scene]-referred.
-pub trait State: Default + fmt::Display {
+pub trait State: Default {
     const STATE: DynamicState;
 }
 
@@ -139,7 +140,6 @@ pub trait State: Default + fmt::Display {
 pub trait AlphaState
 where
     Self: Default
-        + fmt::Display
         + ConvertToAlphaRaw<Separate>
         + ConvertToAlphaRaw<Premultiplied>
         + ConvertFromAlphaRaw<Separate>
@@ -224,6 +224,7 @@ where
 }
 
 /// An object-safe trait implemented by both [`Color`] and [`DynamicColor`].
+#[cfg(not(target_arch = "spirv"))]
 pub trait AnyColor {
     fn raw(&self) -> Vec3;
     fn space(&self) -> DynamicColorSpace;
@@ -235,6 +236,7 @@ pub trait AnyColor {
     }
 }
 
+#[cfg(not(target_arch = "spirv"))]
 impl<'a> From<&'a dyn AnyColor> for DynamicColor {
     fn from(color: &'a dyn AnyColor) -> DynamicColor {
         color.dynamic()
@@ -243,6 +245,7 @@ impl<'a> From<&'a dyn AnyColor> for DynamicColor {
 
 /// A type that implements this trait provides the ability to downcast from a dynamically-typed
 /// color to a statically-typed [`Color`]. This is implemented for all types that implement [`AnyColor`]
+#[cfg(not(target_arch = "spirv"))]
 pub trait DynColor {
     /// Attempt to convert to a typed `Color`. Returns an error if `self`'s color space and state do not match
     /// the given types.
@@ -255,6 +258,7 @@ pub trait DynColor {
 }
 
 /// An object-safe trait implemented by both [`ColorAlpha`] and [`DynamicColorAlpha`]
+#[cfg(not(target_arch = "spirv"))]
 pub trait AnyColorAlpha {
     fn raw(&self) -> Vec4;
     fn space(&self) -> DynamicColorSpace;
@@ -268,6 +272,7 @@ pub trait AnyColorAlpha {
 
 /// A type that implements this trait provides the ability to downcast from a dynamically-typed
 /// color to a statically-typed [`ColorAlpha`]. This is implemented for all types that implement [`AnyColorAlpha`]
+#[cfg(not(target_arch = "spirv"))]
 pub trait DynColorAlpha {
     /// Attempt to downcast to a typed [`ColorAlpha`]. Returns an error if `self`'s color space and alpha state do not match
     /// the given types.
