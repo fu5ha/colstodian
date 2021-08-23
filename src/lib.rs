@@ -369,11 +369,13 @@ pub use component_structs::*;
 pub mod color;
 
 #[doc(inline)]
-pub use color::{Color, ColorAlpha};
+pub use color::{Color, ColorU8, ColorAlpha, ColorU8Alpha};
 
+/*
 #[cfg(not(target_arch = "spirv"))]
 #[doc(inline)]
 pub use color::{DynamicColor, DynamicColorAlpha};
+*/
 
 /// The traits which form the backbone of the strongly-typed [`Color`] & [`ColorAlpha`].
 pub mod traits;
@@ -470,7 +472,7 @@ mod tests {
 
     #[test]
     fn deref_alpha() {
-        let colalpha: ColorAlpha<EncodedSrgb, Premultiplied> = ColorAlpha::new(0.2, 0.3, 0.4, 0.5);
+        let colalpha: ColorAlpha<EncodedSrgb, Display, Premultiplied> = ColorAlpha::new(0.2, 0.3, 0.4, 0.5);
         let r = colalpha.col.r;
         let g = colalpha.col.g;
         let b = colalpha.col.b;

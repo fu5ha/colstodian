@@ -3,10 +3,12 @@ use crate::{
     DynamicColorSpace, DynamicState, Premultiplied, Separate,
 };
 
+/*
 #[cfg(not(target_arch = "spirv"))]
 use crate::{ColorResult, DynamicColor, DynamicColorAlpha};
+*/
 
-use glam::{Vec3, Vec4};
+use glam::Vec3;
 
 /// A type that implements ColorSpace represents a specific color space. See the documentation
 /// of [`DynamicColorSpace`] for more information about what a color space is.
@@ -106,8 +108,8 @@ pub trait ColorInto<T> {
 }
 
 /// A type that implements this trait can be converted directly to and from
-/// an appropriately sized array of `u8`s.
-pub trait AsU8Array {}
+/// the associated `u8` based color types ([`ColorU8`] and [`ColorU8Alpha`])
+pub trait AsU8 {}
 
 /// A type that implements this trait represents a color's State.
 ///
@@ -211,8 +213,8 @@ pub trait ColorAlphaConversionQuery<SrcSpace: ColorSpace, SrcAlpha: AlphaState> 
     type DstAlpha: ConvertFromAlphaRaw<SrcAlpha> + AlphaState;
 }
 
-impl<SrcSpace, DstSpc, SrcAlpha, DstAlpha> ColorAlphaConversionQuery<SrcSpace, SrcAlpha>
-    for ColorAlpha<DstSpc, DstAlpha>
+impl<SrcSpace, DstSpc, St, SrcAlpha, DstAlpha> ColorAlphaConversionQuery<SrcSpace, SrcAlpha>
+    for ColorAlpha<DstSpc, St, DstAlpha>
 where
     SrcSpace: ColorSpace,
     DstSpc: ConvertFromRaw<SrcSpace>,
@@ -223,6 +225,7 @@ where
     type DstAlpha = DstAlpha;
 }
 
+/*
 /// An object-safe trait implemented by both [`Color`] and [`DynamicColor`].
 #[cfg(not(target_arch = "spirv"))]
 pub trait AnyColor {
@@ -276,10 +279,11 @@ pub trait AnyColorAlpha {
 pub trait DynColorAlpha {
     /// Attempt to downcast to a typed [`ColorAlpha`]. Returns an error if `self`'s color space and alpha state do not match
     /// the given types.
-    fn downcast<Spc: ColorSpace, A: AlphaState>(&self) -> ColorResult<ColorAlpha<Spc, A>>;
+    fn downcast<Spc: ColorSpace, St: State, A: AlphaState>(&self) -> ColorResult<ColorAlpha<Spc, St, A>>;
 
     /// Downcast to a typed [`ColorAlpha`] without checking if the color space and state types
     /// match this color's space and state. Use only if you are sure that this color
     /// is in the correct format.
-    fn downcast_unchecked<Spc: ColorSpace, A: AlphaState>(&self) -> ColorAlpha<Spc, A>;
+    fn downcast_unchecked<Spc: ColorSpace, St: State, A: AlphaState>(&self) -> ColorAlpha<Spc, St, A>;
 }
+*/

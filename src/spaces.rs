@@ -1,5 +1,5 @@
 use crate::{
-    ColorSpace, Color, ColorAlpha, Display, Separate, Premultiplied,
+    ColorSpace, Color, ColorU8, ColorAlpha, ColorU8Alpha, Display, Separate, Premultiplied,
     component_structs::{Rgb, ICtCp, ColAlpha, LCh, Lab, Xyz},
     traits::*
 };
@@ -21,7 +21,60 @@ pub mod dynamic_spaces {
     pub const ENCODED_ACES_CG_SRGB: DynamicColorSpace =
         DynamicColorSpace::new(RGBPrimaries::AP1, WhitePoint::D60, TransformFn::sRGB);
 }
+macro_rules! impl_cint {
+    ($t:ident, $cint_ty:ident, $color_ty:ident, $color_alpha_ty:ident, $space:ident) => {
+        impl From<cint::$cint_ty<$t>> for $color_ty<$space, Display> {
+            fn from(color: cint::$cint_ty<$t>) -> $color_ty<$space, Display> {
+                let arr: [$t; 3] = color.into();
+                $color_ty::from(arr)
+            }
+        }
 
+        impl From<$color_ty<$space, Display>> for cint::$cint_ty<$t> {
+            fn from(color: $color_ty<$space, Display>) -> cint::$cint_ty<$t> {
+                From::from(*color.as_ref())
+            }
+        }
+
+        impl<St> From<cint::Alpha<cint::$cint_ty<$t>>> for $color_alpha_ty<$space, St, Separate> {
+            fn from(color: cint::Alpha<cint::$cint_ty<$t>>) -> $color_alpha_ty<$space, St, Separate> {
+                let arr: [$t; 4] = color.into();
+                $color_alpha_ty::from(arr)
+            }
+        }
+
+        impl<St> From<$color_alpha_ty<$space, St, Separate>> for cint::Alpha<cint::$cint_ty<$t>> {
+            fn from(color: $color_alpha_ty<$space, St, Separate>) -> cint::Alpha<cint::$cint_ty<$t>> {
+                From::from(*color.as_ref())
+            }
+        }
+
+        impl<St> From<cint::PremultipliedAlpha<cint::$cint_ty<$t>>> for $color_alpha_ty<$space, St, Premultiplied> {
+            fn from(color: cint::PremultipliedAlpha<cint::$cint_ty<$t>>) -> $color_alpha_ty<$space, St, Premultiplied> {
+                let arr: [$t; 4] = color.into();
+                $color_alpha_ty::from(arr)
+            }
+        }
+
+        impl<St> From<$color_alpha_ty<$space, St, Premultiplied>> for cint::PremultipliedAlpha<cint::$cint_ty<$t>> {
+            fn from(color: $color_alpha_ty<$space, St, Premultiplied>) -> cint::PremultipliedAlpha<cint::$cint_ty<$t>> {
+                From::from(*color.as_ref())
+            }
+        }
+
+        impl cint::ColorInterop for $color_ty<$space, Display> {
+            type CintTy = cint::$cint_ty<$t>;
+        }
+
+        impl<St> cint::ColorInterop for $color_alpha_ty<$space, St, Separate> {
+            type CintTy = cint::Alpha<cint::$cint_ty<$t>>;
+        }
+
+        impl<St> cint::ColorInterop for $color_alpha_ty<$space, St, Premultiplied> {
+            type CintTy = cint::PremultipliedAlpha<cint::$cint_ty<$t>>;
+        }
+    }
+}
 macro_rules! impl_color_space_inner {
     {
         $space:ident is $dynamic_space:ident,
@@ -90,7 +143,7 @@ macro_rules! impl_color_space_inner {
             }
         }
 
-        impl<A> Deref for ColorAlpha<$space, A> {
+        impl<St, A> Deref for ColorAlpha<$space, St, A> {
             type Target = ColAlpha<<$space as ColorSpace>::ComponentStruct>;
 
             /// Test
@@ -100,63 +153,17 @@ macro_rules! impl_color_space_inner {
             }
         }
 
-        impl<A> DerefMut for ColorAlpha<$space, A> {
+        impl<St, A> DerefMut for ColorAlpha<$space, St, A> {
             #[inline(always)]
             fn deref_mut(&mut self) -> &mut Self::Target {
                 unsafe { &mut *(&mut self.raw as *mut Vec4 as *mut Self::Target) }
             }
         }
 
-        $(impl From<cint::$cint_ty<f32>> for Color<$space, Display> {
-            fn from(color: cint::$cint_ty<f32>) -> Color<$space, Display> {
-                let arr: [f32; 3] = color.into();
-                Color::from(arr)
-            }
-        }
-
-        impl From<Color<$space, Display>> for cint::$cint_ty<f32> {
-            fn from(color: Color<$space, Display>) -> cint::$cint_ty<f32> {
-                From::from(*color.as_ref())
-            }
-        }
-
-        impl From<cint::Alpha<cint::$cint_ty<f32>>> for ColorAlpha<$space, Separate> {
-            fn from(color: cint::Alpha<cint::$cint_ty<f32>>) -> ColorAlpha<$space, Separate> {
-                let arr: [f32; 4] = color.into();
-                ColorAlpha::from(arr)
-            }
-        }
-
-        impl From<ColorAlpha<$space, Separate>> for cint::Alpha<cint::$cint_ty<f32>> {
-            fn from(color: ColorAlpha<$space, Separate>) -> cint::Alpha<cint::$cint_ty<f32>> {
-                From::from(*color.as_ref())
-            }
-        }
-
-        impl From<cint::PremultipliedAlpha<cint::$cint_ty<f32>>> for ColorAlpha<$space, Premultiplied> {
-            fn from(color: cint::PremultipliedAlpha<cint::$cint_ty<f32>>) -> ColorAlpha<$space, Premultiplied> {
-                let arr: [f32; 4] = color.into();
-                ColorAlpha::from(arr)
-            }
-        }
-
-        impl From<ColorAlpha<$space, Premultiplied>> for cint::PremultipliedAlpha<cint::$cint_ty<f32>> {
-            fn from(color: ColorAlpha<$space, Premultiplied>) -> cint::PremultipliedAlpha<cint::$cint_ty<f32>> {
-                From::from(*color.as_ref())
-            }
-        }
-
-        impl cint::ColorInterop for Color<$space, Display> {
-            type CintTy = cint::$cint_ty<f32>;
-        }
-
-        impl cint::ColorInterop for ColorAlpha<$space, Separate> {
-            type CintTy = cint::Alpha<cint::$cint_ty<f32>>;
-        }
-
-        impl cint::ColorInterop for ColorAlpha<$space, Premultiplied> {
-            type CintTy = cint::PremultipliedAlpha<cint::$cint_ty<f32>>;
-        })?
+        $(
+            impl_cint!(f32, $cint_ty, Color, ColorAlpha, $space);
+            impl_cint!(u8, $cint_ty, ColorU8, ColorU8Alpha, $space);
+        )?
     };
 }
 
@@ -357,43 +364,7 @@ macro_rules! impl_conversion {
 #[cfg(not(target_arch = "spirv"))]
 macro_rules! impl_as_u8_array {
     ($space:ident: $cint_ty:ident) => {
-        impl AsU8Array for $space {}
-
-        impl From<cint::$cint_ty<u8>> for Color<$space, Display> {
-            fn from(col: cint::$cint_ty<u8>) -> Color<$space, Display> {
-                Color::from_u8(col.into())
-            }
-        }
-
-        impl From<Color<$space, Display>> for cint::$cint_ty<u8> {
-            fn from(col: Color<$space, Display>) -> cint::$cint_ty<u8> {
-                col.to_u8().into()
-            }
-        }
-
-        impl From<cint::Alpha<cint::$cint_ty<u8>>> for ColorAlpha<$space, Separate> {
-            fn from(col: cint::Alpha<cint::$cint_ty<u8>>) -> ColorAlpha<$space, Separate> {
-                ColorAlpha::from_u8(col.into())
-            }
-        }
-
-        impl From<ColorAlpha<$space, Separate>> for cint::Alpha<cint::$cint_ty<u8>> {
-            fn from(col: ColorAlpha<$space, Separate>) -> cint::Alpha<cint::$cint_ty<u8>> {
-                col.to_u8().into()
-            }
-        }
-
-        impl From<cint::PremultipliedAlpha<cint::$cint_ty<u8>>> for ColorAlpha<$space, Premultiplied> {
-            fn from(col: cint::PremultipliedAlpha<cint::$cint_ty<u8>>) -> ColorAlpha<$space, Premultiplied> {
-                ColorAlpha::from_u8(col.into())
-            }
-        }
-
-        impl From<ColorAlpha<$space, Premultiplied>> for cint::PremultipliedAlpha<cint::$cint_ty<u8>> {
-            fn from(col: ColorAlpha<$space, Premultiplied>) -> cint::PremultipliedAlpha<cint::$cint_ty<u8>> {
-                col.to_u8().into()
-            }
-        }
+        impl AsU8 for $space {}
     }
 }
 
@@ -709,7 +680,7 @@ impl_conversion!(EncodedAcesCgSrgb to EncodedBt2100PQ   => sRGB_eotf, AP1_D60_TO
 impl_conversion!(EncodedAcesCgSrgb to EncodedDisplayP3  => sRGB_eotf, AP1_D60_TO_P3_D65, sRGB_oetf);
 impl_conversion!(EncodedAcesCgSrgb to EncodedSrgb       => sRGB_eotf, AP1_D60_TO_BT_709_D65, sRGB_oetf);
 
-impl AsU8Array for EncodedAcesCgSrgb {}
+impl AsU8 for EncodedAcesCgSrgb {}
 
 /// A type representing the [ACES 2065-1][dynamic_spaces::ACES2065_1] color space.
 pub struct Aces2065;

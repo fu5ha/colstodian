@@ -1,14 +1,16 @@
 use crate::traits::*;
 use crate::{
-    AcesCg, Display, DynamicAlphaState, DynamicColorSpace, DynamicState, EncodedSrgb,
+    AcesCg, Display, EncodedSrgb,
     LinearSrgb, Separate,
 };
 
+/*
 #[cfg(not(target_arch = "spirv"))]
 use crate::{
     error::{DowncastError, DynamicConversionError},
     ColorResult,
 };
+*/
 
 use glam::{Vec3, const_vec3};
 #[cfg(all(not(feature = "std"), feature = "libm"))]
@@ -22,10 +24,10 @@ use core::ops::*;
 
 mod color_alpha;
 
-pub use color_alpha::{linear_srgba, srgba, ColorAlpha};
+pub use color_alpha::{linear_srgba, srgba, ColorAlpha, ColorU8Alpha};
 
 #[cfg(not(target_arch = "spirv"))]
-pub use color_alpha::{DynamicColorAlpha, srgba_u8};
+pub use color_alpha::srgba_u8;
 
 /// A strongly typed color, parameterized by a color space and state.
 ///
@@ -227,21 +229,21 @@ impl<Spc: WorkingColorSpace, St> Color<Spc, St> {
     }
 }
 
-impl<Spc: ColorSpace> Color<Spc, Display> {
+impl<Spc: ColorSpace, St> Color<Spc, St> {
     /// Converts `self` to a [`ColorAlpha`] with [`Separate`] alpha state by adding a component. This is probably what you want.
-    pub fn with_alpha(self, alpha: f32) -> ColorAlpha<Spc, Separate> {
+    pub fn with_alpha(self, alpha: f32) -> ColorAlpha<Spc, St, Separate> {
         ColorAlpha::from_raw(self.raw.extend(alpha))
     }
 
     /// Converts `self` to a [`ColorAlpha`] with specified [`AlphaState`] by adding an alpha component. Make sure you choose the
     /// correct alpha state! If you're not sure, you probably want [`Color::with_alpha`].
-    pub fn with_alpha_state<A: AlphaState>(self, alpha: f32) -> ColorAlpha<Spc, A> {
+    pub fn with_alpha_state<A: AlphaState>(self, alpha: f32) -> ColorAlpha<Spc, St, A> {
         ColorAlpha::from_raw(self.raw.extend(alpha))
     }
 }
 
 #[cfg(not(target_arch = "spirv"))]
-impl<Spc: AsU8Array> Color<Spc, Display> {
+impl<Spc: AsU8> Color<Spc, Display> {
     /// Convert `self` to a `[u8; 3]`. All components of `self` will be clamped to range `[0..1]`.
     pub fn to_u8(self) -> [u8; 3] {
         fn f32_to_u8(x: f32) -> u8 {
@@ -278,6 +280,7 @@ where
     }
 }
 
+/*
 #[cfg(not(target_arch = "spirv"))]
 impl<Spc: ColorSpace, St: State> From<Color<Spc, St>> for DynamicColor {
     fn from(color: Color<Spc, St>) -> DynamicColor {
@@ -293,6 +296,7 @@ impl<Spc: ColorSpace, St: State> From<Color<Spc, St>> for kolor::Color {
         }
     }
 }
+*/
 
 impl<Spc, St> Copy for Color<Spc, St> {}
 
@@ -347,6 +351,7 @@ where
     }
 }
 
+/*
 #[cfg(not(target_arch = "spirv"))]
 impl<Spc: ColorSpace, St: State> AnyColor for Color<Spc, St> {
     #[inline]
@@ -364,6 +369,7 @@ impl<Spc: ColorSpace, St: State> AnyColor for Color<Spc, St> {
         self.raw
     }
 }
+*/
 
 macro_rules! impl_op_color {
     ($op:ident, $op_func:ident) => {
@@ -430,6 +436,67 @@ impl_binop_color!(DivAssign, div_assign);
 impl_op_color_float!(Mul, mul);
 impl_op_color_float!(Div, div);
 
+/// An encoded color, 8-bit per component, 24-bit total.
+///
+/// This should only be used when space is an issue, i.e. when compressing data.
+/// Otherwise prefer a [`Color`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "with_serde", derive(serde::Serialize, serde::Deserialize))]
+#[repr(C)]
+pub struct ColorU8<Spc, St> {
+    pub raw: [u8; 3],
+    _pd: PhantomData<(Spc, St)>,
+}
+
+impl<Spc, St> Index<usize> for ColorU8<Spc, St> {
+    type Output = u8;
+
+    fn index(&self, i: usize) -> &u8 {
+        &self.raw[i]
+    }
+}
+
+impl<Spc, St> IndexMut<usize> for ColorU8<Spc, St> {
+    fn index_mut(&mut self, i: usize) -> &mut u8 {
+        &mut self.raw[i]
+    }
+}
+
+impl<Spc, St> AsRef<[u8; 3]> for ColorU8<Spc, St> {
+    fn as_ref(&self) -> &[u8; 3] {
+        &self.raw
+    }
+}
+
+impl<Spc, St> ColorU8<Spc, St> {
+    pub fn new(x: u8, y: u8, z: u8) -> Self {
+        Self {
+            raw: [x, y, z],
+            _pd: PhantomData
+        }
+    }
+
+    pub fn from_raw(raw: [u8; 3]) -> Self {
+        Self {
+            raw,
+            _pd: PhantomData
+        }
+    }
+}
+
+impl<Spc, St> From<[u8; 3]> for ColorU8<Spc, St> {
+    fn from(raw: [u8; 3]) -> Self {
+        Self::from_raw(raw)
+    }
+}
+
+impl<Spc, St> From<ColorU8<Spc, St>> for [u8; 3] {
+    fn from(c: ColorU8<Spc, St>) -> Self {
+        c.raw
+    }
+}
+
+/*
 /// A dynamic color, with its Space and State defined
 /// as data. This is mostly useful for (de)serialization.
 ///
@@ -588,3 +655,4 @@ impl<C: AnyColor> DynColor for C {
         Color::from_raw(self.raw())
     }
 }
+*/
