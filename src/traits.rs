@@ -8,6 +8,9 @@ use crate::{
 use crate::{ColorResult, DynamicColor, DynamicColorAlpha};
 */
 
+#[cfg(doc)]
+use crate::{ColorU8, ColorU8Alpha};
+
 use glam::Vec3;
 
 /// A type that implements ColorSpace represents a specific color space. See the documentation

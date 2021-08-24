@@ -8,7 +8,8 @@ use core::fmt;
 
 /// Encodes that a color's component values have been premultiplied with its
 /// alpha channel.
-#[derive(Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct Premultiplied;
 
 impl AlphaState for Premultiplied {
@@ -41,7 +42,8 @@ impl fmt::Display for Premultiplied {
 
 /// Encodes that a color's component values are completely separate from its
 /// alpha channel.
-#[derive(Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct Separate;
 
 impl AlphaState for Separate {

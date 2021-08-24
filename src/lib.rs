@@ -81,7 +81,7 @@
 //!
 //! ```rust
 //! # use colstodian::*;
-//! let loaded_asset_color = color::srgb_u8(128, 128, 128);
+//! let loaded_asset_color = color::srgb_u8(128, 128, 128).to_f32();
 //! ```
 //!
 //! But wait, we can't do much with this color yet...
@@ -117,8 +117,8 @@
 //! ```rust
 //! # use colstodian::*;
 //!
-//! let oklab1 = color::srgb_u8(128, 12, 57).convert::<Oklab>();
-//! let oklab2 = color::srgb_u8(25, 35, 68).convert::<Oklab>();
+//! let oklab1 = color::srgb_u8(128, 12, 57).to_f32().convert::<Oklab>();
+//! let oklab2 = color::srgb_u8(25, 35, 68).to_f32().convert::<Oklab>();
 //!
 //! let blended = oklab1.blend(oklab2, 0.5); // Blend half way between the two colors
 //! ```
@@ -138,10 +138,14 @@
 //! // space, and Rust infers the type on the `convert` method for us.
 //! let output: Color<EncodedSrgb, Display> = blended.convert();
 //!
-//! // Some applications will want a color in the form of an array of `u8`s.
+//! // Some applications will want a color in the form of an array of `u8`s or a packed `u32`.
 //! // Certain encoded color spaces will allow you to convert a color in that
-//! // space to/from an array of `u8`s. EncodedSrgb is one of those:
-//! let output_u8: [u8; 3] = output.to_u8();
+//! // space to/from a 8-bit encoded form. EncodedSrgb is one of those:
+//! let output_u8: ColorU8<_, _> = output.to_u8();
+//!
+//! // From here we can either get the raw array of `u8`s, or if it was a
+//! // `ColorAlphaU8`, we could convert it to a packed `u32`.
+//! let output_u8_array: [u8; 3] = output_u8.raw;
 //! ```
 //!
 //! Here we can see an example of where [`convert_to`][Color::convert_to] may be preferrable over
@@ -158,10 +162,10 @@
 //! type Perceptual = Color<Oklab, Display>;
 //! type Srgb = Color<EncodedSrgb, Display>;
 //!
-//! let color_1 = color::srgb_u8(128, 12, 57);
-//! let color_2 = color::srgb_u8(25, 35, 68);
+//! let color_1 = color::srgb_u8(128, 12, 57).to_f32();
+//! let color_2 = color::srgb_u8(25, 35, 68).to_f32();
 //!
-//! let blended_u8: [u8; 3] = color_1.convert_to::<Perceptual>().blend(
+//! let blended_u8 = color_1.convert_to::<Perceptual>().blend(
 //!     color_2.convert_to::<Perceptual>(),
 //!     0.5
 //! ).convert_to::<Srgb>().to_u8();
@@ -178,7 +182,7 @@
 //!
 //! ```rust
 //! # use colstodian::*;
-//! let mut encoded_color = color::srgb_u8(127, 127, 127);
+//! let mut encoded_color = color::srgb_u8(127, 127, 127).to_f32();
 //! encoded_color.raw *= 0.5; // This works! But be careful that you know what you're doing.
 //! ```
 //!
@@ -369,7 +373,10 @@ pub use component_structs::*;
 pub mod color;
 
 #[doc(inline)]
-pub use color::{Color, ColorU8, ColorAlpha, ColorU8Alpha};
+pub use color::{Color, ColorAlpha};
+
+#[cfg(not(target_arch = "spirv"))]
+pub use color::{ColorU8, ColorU8Alpha};
 
 /*
 #[cfg(not(target_arch = "spirv"))]

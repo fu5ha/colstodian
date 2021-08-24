@@ -9,7 +9,7 @@ use core::fmt;
 /// A bag of components with an alpha channel. Some `ColorAlpha`s will Deref
 /// to this so that you can use `.alpha` and `.col.{component_name}`.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct ColAlpha<T> {
     pub col: T,
     pub alpha: f32,
@@ -41,7 +41,7 @@ impl_bytemuck!(Rgb, ICtCp, Xyz, Lab, LCh);
 /// A bag of components with names R, G, B. Some `Color`s with RGB color spaces
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Rgb {
     pub r: f32,
     pub g: f32,
@@ -58,7 +58,7 @@ impl fmt::Display for Rgb {
 /// A bag of components with names I (Intensity), Ct (Chroma-Tritan), Cp (Chroma-Protan). Some `Color`s
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct ICtCp {
     pub i: f32,
     pub ct: f32,
@@ -75,7 +75,7 @@ impl fmt::Display for ICtCp {
 /// A bag of components with names X, Y, Z. Some `Color`s with XYZ color spaces
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Xyz {
     pub x: f32,
     pub y: f32,
@@ -93,7 +93,7 @@ impl fmt::Display for Xyz {
 /// Some `Color`s with XYZ color spaces will `Deref`/`DerefMut` to this struct so that you can
 /// access their components with dot-syntax.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Lab {
     pub l: f32,
     pub a: f32,
@@ -111,7 +111,7 @@ impl fmt::Display for Lab {
 /// Some `Color`s with XYZ color spaces will `Deref`/`DerefMut` to this struct so that you can
 /// access their components with dot-syntax.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct LCh {
     pub l: f32,
     pub c: f32,

@@ -1,8 +1,11 @@
 use crate::{
-    ColorSpace, Color, ColorU8, ColorAlpha, ColorU8Alpha, Display, Separate, Premultiplied,
+    ColorSpace, Color, ColorAlpha, Display, Separate, Premultiplied,
     component_structs::{Rgb, ICtCp, ColAlpha, LCh, Lab, Xyz},
     traits::*
 };
+
+#[cfg(not(target_arch = "spirv"))]
+use crate::{ColorU8, ColorU8Alpha};
 
 use glam::{Vec3, Vec4};
 
@@ -21,6 +24,7 @@ pub mod dynamic_spaces {
     pub const ENCODED_ACES_CG_SRGB: DynamicColorSpace =
         DynamicColorSpace::new(RGBPrimaries::AP1, WhitePoint::D60, TransformFn::sRGB);
 }
+
 macro_rules! impl_cint {
     ($t:ident, $cint_ty:ident, $color_ty:ident, $color_alpha_ty:ident, $space:ident) => {
         impl From<cint::$cint_ty<$t>> for $color_ty<$space, Display> {
@@ -162,6 +166,7 @@ macro_rules! impl_color_space_inner {
 
         $(
             impl_cint!(f32, $cint_ty, Color, ColorAlpha, $space);
+            #[cfg(not(target_arch = "spirv"))]
             impl_cint!(u8, $cint_ty, ColorU8, ColorU8Alpha, $space);
         )?
     };
@@ -369,6 +374,7 @@ macro_rules! impl_as_u8_array {
 }
 
 /* Canonical conversion template
+impl_conversion!(SPACENAME to SPACENAME        => None, None, None);
 impl_conversion!(SPACENAME to LinearSrgb        => SPACE_EOTF, PRIMARIES_WHITEPOINT_TO_BT_709_D65, None);
 impl_conversion!(SPACENAME to AcesCg            => SPACE_EOTF, PRIMARIES_WHITEPOINT_TO_AP1_D60, None);
 impl_conversion!(SPACENAME to Aces2065          => SPACE_EOTF, PRIMARIES_WHITEPOINT_TO_AP0_D60, None);
@@ -386,6 +392,8 @@ impl_conversion!(SPACENAME to EncodedSrgb       => SPACE_EOTF, PRIMARIES_WHITEPO
 */
 
 /// A type representing the [linear sRGB][dynamic_spaces::LINEAR_SRGB] color space.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct LinearSrgb;
 
 impl_color_space! {
@@ -411,6 +419,8 @@ impl_conversion!(LinearSrgb to EncodedDisplayP3  => None, BT_709_D65_TO_P3_D65, 
 impl_conversion!(LinearSrgb to EncodedSrgb       => None, None, sRGB_oetf);
 
 /// A type representing the [encoded sRGB][dynamic_spaces::ENCODED_SRGB] colorspace.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct EncodedSrgb;
 
 impl_color_space! {
@@ -425,6 +435,7 @@ impl_color_space! {
 #[cfg(not(target_arch = "spirv"))]
 impl_as_u8_array!(EncodedSrgb: EncodedSrgb);
 
+impl_conversion!(EncodedSrgb to EncodedSrgb => None, None, None);
 impl_conversion!(EncodedSrgb to LinearSrgb => sRGB_eotf, None, None);
 impl_conversion!(EncodedSrgb to AcesCg => sRGB_eotf, BT_709_D65_TO_AP1_D60, None);
 impl_conversion!(EncodedSrgb to Aces2065 => sRGB_eotf, BT_709_D65_TO_AP0_D60, None);
@@ -440,6 +451,8 @@ impl_conversion!(EncodedSrgb to EncodedBt2100PQ => sRGB_eotf, BT_709_D65_TO_BT_2
 impl_conversion!(EncodedSrgb to EncodedDisplayP3 => sRGB_eotf, BT_709_D65_TO_P3_D65, sRGB_oetf);
 
 /// A type representing the reference [XYZ][dynamic_spaces::CIE_XYZ] color space.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct CieXYZ;
 
 impl_color_space! {
@@ -466,6 +479,8 @@ impl_conversion!(CieXYZ to EncodedSrgb       => None, CIE_XYZ_D65_TO_BT_709_D65,
 
 /// A type representing the [BT.2020][dynamic_spaces::BT_2020] color space
 /// (equivalent to the linear BT.2100 color space).
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct Bt2020;
 
 impl_color_space! {
@@ -491,6 +506,8 @@ impl_conversion!(Bt2020 to EncodedDisplayP3  => None, BT_2020_D65_TO_P3_D65, sRG
 impl_conversion!(Bt2020 to EncodedSrgb       => None, BT_2020_D65_TO_BT_709_D65, sRGB_oetf);
 
 /// A type representing the encoded [BT.2020][Bt2020] color space (with BT.2020 OETF applied).
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct EncodedBt2020;
 
 impl_color_space! {
@@ -521,6 +538,8 @@ impl_conversion!(EncodedBt2020 to EncodedSrgb       => bt601_oetf_inverse, BT_20
 pub type Bt2100 = Bt2020;
 
 /// A type representing the encoded [BT.2100][Bt2100] color space (with inverse PQ EOTF applied).
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct EncodedBt2100PQ;
 
 impl_color_space! {
@@ -548,6 +567,8 @@ impl_conversion!(EncodedBt2100PQ to EncodedDisplayP3  => ST_2084_PQ_eotf, BT_202
 impl_conversion!(EncodedBt2100PQ to EncodedSrgb       => ST_2084_PQ_eotf, BT_2020_D65_TO_BT_709_D65, sRGB_oetf);
 
 /// A type representing the [ICtCp][dynamic_spaces::ICtCp_PQ] color space with PQ (Perceptual Quantizer) transfer functions.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct ICtCpPQ;
 
 impl_color_space! {
@@ -574,6 +595,8 @@ impl_conversion!(ICtCpPQ to EncodedDisplayP3  => ICtCp_PQ_to_RGB, BT_2020_D65_TO
 impl_conversion!(ICtCpPQ to EncodedSrgb       => ICtCp_PQ_to_RGB, BT_2020_D65_TO_BT_709_D65, sRGB_oetf);
 
 /// A type representing the [Oklab][dynamic_spaces::OKLAB] color space.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct Oklab;
 
 impl_color_space! {
@@ -600,6 +623,8 @@ impl_conversion!(Oklab to EncodedDisplayP3  => Oklab_to_XYZ, CIE_XYZ_D65_TO_P3_D
 impl_conversion!(Oklab to EncodedSrgb       => Oklab_to_XYZ, CIE_XYZ_D65_TO_BT_709_D65, sRGB_oetf);
 
 /// A type representing the [Oklch][dynamic_spaces::OKLCH] color space.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct Oklch;
 
 impl_color_space! {
@@ -624,7 +649,10 @@ impl_conversion!(Oklch to EncodedBt2020     => Oklch_to_XYZ, CIE_XYZ_D65_TO_BT_2
 impl_conversion!(Oklch to EncodedBt2100PQ   => Oklch_to_XYZ, CIE_XYZ_D65_TO_BT_2020_D65, ST_2084_PQ_eotf_inverse);
 impl_conversion!(Oklch to EncodedDisplayP3  => Oklch_to_XYZ, CIE_XYZ_D65_TO_P3_D65, sRGB_oetf);
 impl_conversion!(Oklch to EncodedSrgb       => Oklch_to_XYZ, CIE_XYZ_D65_TO_BT_709_D65, sRGB_oetf);
+
 /// A type representing the [ACEScg][dynamic_spaces::ACES_CG] color space.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct AcesCg;
 
 impl_color_space! {
@@ -655,6 +683,8 @@ impl_conversion!(AcesCg to EncodedSrgb       => None, AP1_D60_TO_BT_709_D65, sRG
 /// sRGB transfer functions. Using the sRGB transfer functions to encode ACEScg data is useful when trying to
 /// use 8-bit texture formats. The OETF "compresses" the data to give better bit distribution based on
 /// human color perception.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct EncodedAcesCgSrgb;
 
 impl_color_space! {
@@ -683,6 +713,8 @@ impl_conversion!(EncodedAcesCgSrgb to EncodedSrgb       => sRGB_eotf, AP1_D60_TO
 impl AsU8 for EncodedAcesCgSrgb {}
 
 /// A type representing the [ACES 2065-1][dynamic_spaces::ACES2065_1] color space.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct Aces2065;
 
 impl_color_space! {
@@ -708,6 +740,8 @@ impl_conversion!(Aces2065 to EncodedDisplayP3  => None, AP0_D60_TO_P3_D65, sRGB_
 impl_conversion!(Aces2065 to EncodedSrgb       => None, AP0_D60_TO_BT_709_D65, sRGB_oetf);
 
 /// A type representing the Apple [Display P3][dynamic_spaces::DISPLAY_P3] color space.
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct DisplayP3;
 
 impl_color_space! {
@@ -733,6 +767,8 @@ impl_conversion!(DisplayP3 to EncodedDisplayP3  => None, None, sRGB_oetf);
 impl_conversion!(DisplayP3 to EncodedSrgb       => None, P3_D65_TO_BT_709_D65, sRGB_oetf);
 
 /// A type representing the encoded [Display P3][DisplayP3] color space (with sRGB OETF applied).
+#[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct EncodedDisplayP3;
 
 impl_color_space! {

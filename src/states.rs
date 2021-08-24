@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 /// Encodes that a color is [`Scene`]-referred (in the range [0..inf)), defined in relation
 /// to input values from a (virtual) camera or other input device. Usually
 /// representing something like radiance in an HDR rendering pipeline.
-#[derive(Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct Scene;
 
 impl State for Scene {
@@ -24,7 +25,8 @@ impl fmt::Display for Scene {
 
 /// Encodes that a color is [`Display`]-referred (in the range [0..1], defined
 /// in relation to a display standard).
-#[derive(Default)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+#[cfg_attr(not(target_arch = "spirv"), derive(Debug))]
 pub struct Display;
 
 impl State for Display {

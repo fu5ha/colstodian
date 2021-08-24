@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 
 /// A strongly typed color with an alpha channel, parameterized by a color space, state, and alpha state.
 ///
-/// See crate-level docs as well as [`ColorSpace`] and [`AlphaState`] for more.
+/// See crate-level docs as well as [`ColorSpace`], [`State`] and [`AlphaState`] for more.
 #[repr(transparent)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct ColorAlpha<Spc, St, A> {
@@ -484,80 +484,133 @@ impl_binop_color!(DivAssign, div_assign);
 impl_op_color_float!(Mul, mul);
 impl_op_color_float!(Div, div);
 
-/// An encoded color with alpha, 8-bit per component, 32-bit total.
-///
-/// This should only be used when space is an issue, i.e. when compressing data.
-/// Otherwise prefer a [`ColorAlpha`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "with_serde", derive(serde::Serialize, serde::Deserialize))]
-#[repr(C)]
-pub struct ColorU8Alpha<Spc, St, A> {
-    pub raw: [u8; 4],
-    _pd: PhantomData<(Spc, St, A)>,
-}
+#[cfg(not(target_arch = "spirv"))]
+mod color_u8 {
+    use super::*;
 
-impl<Spc, St, A> Index<usize> for ColorU8Alpha<Spc, St, A> {
-    type Output = u8;
-
-    fn index(&self, i: usize) -> &u8 {
-        &self.raw[i]
+    /// An encoded color with alpha, 8-bit per component, 32-bit total.
+    ///
+    /// This should only be used when space is an issue, i.e. when compressing data.
+    /// Otherwise prefer a [`ColorAlpha`].
+    #[derive(Debug, PartialEq, Eq)]
+    #[cfg_attr(feature = "with-serde", derive(serde::Serialize, serde::Deserialize))]
+    #[repr(C)]
+    pub struct ColorU8Alpha<Spc, St, A> {
+        pub raw: [u8; 4],
+        _pd: PhantomData<(Spc, St, A)>,
     }
-}
 
-impl<Spc, St, A> IndexMut<usize> for ColorU8Alpha<Spc, St, A> {
-    fn index_mut(&mut self, i: usize) -> &mut u8 {
-        &mut self.raw[i]
-    }
-}
-
-impl<Spc, St, A> AsRef<[u8; 4]> for ColorU8Alpha<Spc, St, A> {
-    fn as_ref(&self) -> &[u8; 4] {
-        &self.raw
-    }
-}
-
-impl<Spc, St, A> ColorU8Alpha<Spc, St, A> {
-    pub fn new(x: u8, y: u8, z: u8, w: u8) -> Self {
-        Self {
-            raw: [x, y, z, w],
-            _pd: PhantomData
+    impl<Spc, St, A> Clone for ColorU8Alpha<Spc, St, A> {
+        fn clone(&self) -> ColorU8Alpha<Spc, St, A> {
+            *self
         }
     }
 
-    pub fn from_raw(raw: [u8; 4]) -> Self {
-        Self {
-            raw,
-            _pd: PhantomData
+    impl<Spc, St, A> Copy for ColorU8Alpha<Spc, St, A> {}
+
+    #[cfg(feature = "bytemuck")]
+    unsafe impl<Spc, St, A> bytemuck::Zeroable for ColorU8Alpha<Spc, St, A> {}
+    #[cfg(feature = "bytemuck")]
+    unsafe impl<Spc, St, A> bytemuck::TransparentWrapper<[u8; 4]> for ColorU8Alpha<Spc, St, A> {}
+    #[cfg(feature = "bytemuck")]
+    unsafe impl<Spc: 'static, St: 'static, A: 'static> bytemuck::Pod for ColorU8Alpha<Spc, St, A> {}
+
+    impl<Spc, St, A> Index<usize> for ColorU8Alpha<Spc, St, A> {
+        type Output = u8;
+
+        fn index(&self, i: usize) -> &u8 {
+            &self.raw[i]
+        }
+    }
+
+    impl<Spc, St, A> IndexMut<usize> for ColorU8Alpha<Spc, St, A> {
+        fn index_mut(&mut self, i: usize) -> &mut u8 {
+            &mut self.raw[i]
+        }
+    }
+
+    impl<Spc, St, A> AsRef<[u8; 4]> for ColorU8Alpha<Spc, St, A> {
+        fn as_ref(&self) -> &[u8; 4] {
+            &self.raw
+        }
+    }
+
+    impl<Spc, St, A> ColorU8Alpha<Spc, St, A> {
+        pub fn new(x: u8, y: u8, z: u8, w: u8) -> Self {
+            Self {
+                raw: [x, y, z, w],
+                _pd: PhantomData
+            }
+        }
+
+        pub fn from_raw(raw: [u8; 4]) -> Self {
+            Self {
+                raw,
+                _pd: PhantomData
+            }
+        }
+    }
+
+    #[cfg(not(target_arch = "spirv"))]
+    impl<Spc: AsU8, St, A> ColorU8Alpha<Spc, St, A> {
+        /// Convert `self` to a [`ColorU8Alpha`] of identical type. 
+        /// All components of `self` will be clamped to be in range `[0..1]`.
+        pub fn from_f32(col: ColorAlpha<Spc, St, A>) -> ColorU8Alpha<Spc, St, A> {
+            fn f32_to_u8(x: f32) -> u8 {
+                (x * 255.0).min(255.0).max(0.0).round() as u8
+            }
+            ColorU8Alpha::from_raw([
+                f32_to_u8(col.raw.x),
+                f32_to_u8(col.raw.y),
+                f32_to_u8(col.raw.z),
+                f32_to_u8(col.raw.w),
+            ])
+        }
+
+        /// Decode a [`ColorU8Alpha`] into a [`ColorAlpha`] of identical type.
+        pub fn to_f32(self) -> ColorAlpha<Spc, St, A> {
+            fn u8_to_f32(x: u8) -> f32 {
+                x as f32 / 255.0
+            }
+            ColorAlpha::new(
+                u8_to_f32(self[0]),
+                u8_to_f32(self[1]),
+                u8_to_f32(self[2]),
+                u8_to_f32(self[3]),
+            )
+        }
+    }
+
+    impl<Spc, St, A> From<ColorU8Alpha<Spc, St, A>> for u32 {
+        fn from(c: ColorU8Alpha<Spc, St, A>) -> u32 {
+            (u32::from(c.raw[0]) << 24)
+                | (u32::from(c.raw[1]) << 16)
+                | (u32::from(c.raw[2]) << 8)
+                | u32::from(c.raw[3])
+        }
+    }
+
+    impl<Spc, St, A> From<u32> for ColorU8Alpha<Spc, St, A> {
+        fn from(c: u32) -> Self {
+            Self::new((c >> 24) as u8, (c >> 16) as u8, (c >> 8) as u8, c as u8)
+        }
+    }
+
+    impl<Spc, St, A> From<[u8; 4]> for ColorU8Alpha<Spc, St, A> {
+        fn from(raw: [u8; 4]) -> Self {
+            Self::from_raw(raw)
+        }
+    }
+
+    impl<Spc, St, A> From<ColorU8Alpha<Spc, St, A>> for [u8; 4] {
+        fn from(c: ColorU8Alpha<Spc, St, A>) -> Self {
+            c.raw
         }
     }
 }
 
-impl<Spc, St, A> From<ColorU8Alpha<Spc, St, A>> for u32 {
-    fn from(c: ColorU8Alpha<Spc, St, A>) -> u32 {
-        (u32::from(c.raw[0]) << 24)
-            | (u32::from(c.raw[1]) << 16)
-            | (u32::from(c.raw[2]) << 8)
-            | u32::from(c.raw[3])
-    }
-}
-
-impl<Spc, St, A> From<u32> for ColorU8Alpha<Spc, St, A> {
-    fn from(c: u32) -> Self {
-        Self::new((c >> 24) as u8, (c >> 16) as u8, (c >> 8) as u8, c as u8)
-    }
-}
-
-impl<Spc, St, A> From<[u8; 4]> for ColorU8Alpha<Spc, St, A> {
-    fn from(raw: [u8; 4]) -> Self {
-        Self::from_raw(raw)
-    }
-}
-
-impl<Spc, St, A> From<ColorU8Alpha<Spc, St, A>> for [u8; 4] {
-    fn from(c: ColorU8Alpha<Spc, St, A>) -> Self {
-        c.raw
-    }
-}
+#[cfg(not(target_arch = "spirv"))]
+pub use color_u8::ColorU8Alpha;
 
 /*
 /// A dynamic color with an alpha channel, with its space and alpha defined
