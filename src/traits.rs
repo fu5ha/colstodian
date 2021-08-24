@@ -1,6 +1,5 @@
 use crate::{
-    Color, ColorAlpha, DynamicAlphaState,
-    DynamicColorSpace, DynamicState, Premultiplied, Separate,
+    Color, ColorAlpha, DynamicAlphaState, DynamicColorSpace, DynamicState, Premultiplied, Separate,
 };
 
 /*

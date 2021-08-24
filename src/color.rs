@@ -1,8 +1,5 @@
-use crate::{Premultiplied, traits::*};
-use crate::{
-    AcesCg, Display, EncodedSrgb,
-    LinearSrgb, Separate,
-};
+use crate::{traits::*, Premultiplied};
+use crate::{AcesCg, Display, EncodedSrgb, LinearSrgb, Separate};
 
 /*
 #[cfg(not(target_arch = "spirv"))]
@@ -12,7 +9,7 @@ use crate::{
 };
 */
 
-use glam::{Vec3, const_vec3};
+use glam::{const_vec3, Vec3};
 #[cfg(all(not(feature = "std"), feature = "libm"))]
 use num_traits::Float;
 #[cfg(feature = "serde")]
@@ -44,7 +41,7 @@ pub struct Color<Spc, St> {
 macro_rules! const_color {
     ($el1:expr, $el2:expr, $el3:expr) => {
         Color::from_raw(const_vec3!([$el1, $el2, $el3]))
-    }
+    };
 }
 
 impl<Spc, St> From<[f32; 3]> for Color<Spc, St> {
@@ -266,11 +263,7 @@ impl<Spc: AsU8, St> Color<Spc, St> {
         fn u8_to_f32(x: u8) -> f32 {
             x as f32 / 255.0
         }
-        Color::new(
-            u8_to_f32(col[0]),
-            u8_to_f32(col[1]),
-            u8_to_f32(col[2]),
-        )
+        Color::new(u8_to_f32(col[0]), u8_to_f32(col[1]), u8_to_f32(col[2]))
     }
 }
 
@@ -496,14 +489,14 @@ mod color_u8 {
         pub fn new(x: u8, y: u8, z: u8) -> Self {
             Self {
                 raw: [x, y, z],
-                _pd: PhantomData
+                _pd: PhantomData,
             }
         }
 
         pub fn from_raw(raw: [u8; 3]) -> Self {
             Self {
                 raw,
-                _pd: PhantomData
+                _pd: PhantomData,
             }
         }
     }
@@ -527,11 +520,7 @@ mod color_u8 {
             fn u8_to_f32(x: u8) -> f32 {
                 x as f32 / 255.0
             }
-            Color::new(
-                u8_to_f32(self[0]),
-                u8_to_f32(self[1]),
-                u8_to_f32(self[2]),
-            )
+            Color::new(u8_to_f32(self[0]), u8_to_f32(self[1]), u8_to_f32(self[2]))
         }
     }
 

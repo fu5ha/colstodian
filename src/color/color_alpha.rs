@@ -3,9 +3,7 @@ use core::marker::PhantomData;
 use core::ops::*;
 
 use crate::{
-    traits::*, ColAlpha, Color, Display,
-    EncodedSrgb, LinearSrgb, Premultiplied,
-    Separate,
+    traits::*, ColAlpha, Color, Display, EncodedSrgb, LinearSrgb, Premultiplied, Separate,
 };
 
 /*
@@ -17,7 +15,7 @@ use crate::{
 };
 */
 
-use glam::{Vec4, Vec4Swizzles, const_vec4};
+use glam::{const_vec4, Vec4, Vec4Swizzles};
 #[cfg(all(not(feature = "std"), feature = "libm"))]
 use num_traits::Float;
 #[cfg(feature = "serde")]
@@ -39,9 +37,9 @@ macro_rules! const_color_alpha {
     ($el1:expr, $el2:expr, $el3:expr, $alpha:expr) => {
         ColorAlpha {
             raw: const_vec4!([$el1, $el2, $el3, $alpha]),
-            _pd: PhantomData
+            _pd: PhantomData,
         }
-    }
+    };
 }
 
 impl<Spc, St, A> From<[f32; 4]> for ColorAlpha<Spc, St, A> {
@@ -107,13 +105,23 @@ pub fn srgba<A: AlphaState>(r: f32, g: f32, b: f32, a: f32) -> ColorAlpha<Encode
 /// Creates a [`ColorU8Alpha`] in the [`EncodedSrgb`] color space with components `r`, `g`, `b`, and `a`.
 #[inline]
 #[cfg(not(target_arch = "spirv"))]
-pub fn srgba_u8<A: AlphaState>(r: u8, g: u8, b: u8, a: u8) -> ColorU8Alpha<EncodedSrgb, Display, A> {
+pub fn srgba_u8<A: AlphaState>(
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+) -> ColorU8Alpha<EncodedSrgb, Display, A> {
     ColorU8Alpha::from_raw([r, g, b, a])
 }
 
 /// Creates a [`ColorAlpha`] in the [`LinearSrgb`] color space with components `r`, `g`, `b`, and `a`
 #[inline]
-pub fn linear_srgba<St: State, A: AlphaState>(r: f32, g: f32, b: f32, a: f32) -> ColorAlpha<LinearSrgb, St, A> {
+pub fn linear_srgba<St: State, A: AlphaState>(
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
+) -> ColorAlpha<LinearSrgb, St, A> {
     ColorAlpha::new(r, g, b, a)
 }
 
@@ -211,7 +219,11 @@ where
 
 impl<Spc: WorkingColorSpace, St> ColorAlpha<Spc, St, Separate> {
     /// Blend `self`'s color values with the color values from `other`. Does not blend alpha.
-    pub fn blend(self, other: ColorAlpha<Spc, St, Separate>, factor: f32) -> ColorAlpha<Spc, St, Separate> {
+    pub fn blend(
+        self,
+        other: ColorAlpha<Spc, St, Separate>,
+        factor: f32,
+    ) -> ColorAlpha<Spc, St, Separate> {
         ColorAlpha::from_raw(
             self.raw
                 .xyz()
@@ -322,7 +334,7 @@ where
 
 #[cfg(not(target_arch = "spirv"))]
 impl<Spc: AsU8, St, A: AlphaState> ColorAlpha<Spc, St, A> {
-    /// Convert `self` to a [`ColorU8Alpha`] of identical type. 
+    /// Convert `self` to a [`ColorU8Alpha`] of identical type.
     /// All components of `self` will be clamped to be in range `[0..1]`.
     pub fn to_u8(self) -> ColorU8Alpha<Spc, St, A> {
         fn f32_to_u8(x: f32) -> u8 {
@@ -539,21 +551,21 @@ mod color_u8 {
         pub fn new(x: u8, y: u8, z: u8, w: u8) -> Self {
             Self {
                 raw: [x, y, z, w],
-                _pd: PhantomData
+                _pd: PhantomData,
             }
         }
 
         pub fn from_raw(raw: [u8; 4]) -> Self {
             Self {
                 raw,
-                _pd: PhantomData
+                _pd: PhantomData,
             }
         }
     }
 
     #[cfg(not(target_arch = "spirv"))]
     impl<Spc: AsU8, St, A> ColorU8Alpha<Spc, St, A> {
-        /// Convert `self` to a [`ColorU8Alpha`] of identical type. 
+        /// Convert `self` to a [`ColorU8Alpha`] of identical type.
         /// All components of `self` will be clamped to be in range `[0..1]`.
         pub fn from_f32(col: ColorAlpha<Spc, St, A>) -> ColorU8Alpha<Spc, St, A> {
             fn f32_to_u8(x: f32) -> u8 {
