@@ -40,8 +40,8 @@ pub trait EncodedColorSpace: ColorSpace {
     type DecodedSpace: WorkingColorSpace + ConvertFromRaw<Self>;
 }
 
-/// Marks a type as representing a color space that is not [encoded][EncodedColorSpace] and is therefore
-/// able to have many more operations performed on it.
+/// Marks a type as representing a color space that is not [encoded][EncodedColorSpace] and is
+/// therefore able to have many more operations performed on it.
 pub trait WorkingColorSpace: ColorSpace {}
 
 /// Performs the raw conversion from the [`ColorSpace`] represented by `SrcSpc` to
@@ -86,8 +86,9 @@ impl<SrcSpace: ColorSpace, DstSpace: ConvertFromRaw<SrcSpace>> ConvertToRaw<DstS
 
 /// A trait meant to be used as a replacement for [`Into`] in situations where you want
 /// to bound a type as being able to be converted into a specific type of color.
-/// Because of how `colstodian` works and how [`From`]/[`Into`] are implemented, we can't use them directly
-/// for this purpose.
+///
+/// Because of how `colstodian` works and how [`From`]/[`Into`] are implemented, we can't use them
+/// directly for this purpose.
 ///
 /// # Example
 ///
@@ -100,7 +101,7 @@ impl<SrcSpace: ColorSpace, DstSpace: ConvertFromRaw<SrcSpace>> ConvertToRaw<DstS
 ///     color * tint
 /// }
 ///
-/// let color = color::srgb_u8(225, 200, 86);
+/// let color = color::srgb_u8(225, 200, 86).to_f32();
 /// let tinted: Color<EncodedSrgb, Display> = tint_color(color).convert();
 ///
 /// println!("Pre-tint: {}, Post-tint: {}", color, tinted);
@@ -116,23 +117,31 @@ pub trait AsU8 {}
 /// A type that implements this trait represents a color's State.
 ///
 /// All colors have units. Sometimes a color's units are explicit, such as measuring the emitted
-/// light from a display using a spectroradiometer and being able to reference pixel values in CIE XYZ cd/m2.
+/// light from a display using a spectroradiometer and being able to reference pixel values in
+/// CIE XYZ cd/m2.
+///
 /// Other times, the units are only indirectly related to the real world, and then providing a
-/// mathematical conversion to measurable quantities. For example, in the case of display technology, common color encodings
-/// (relations of code value to measurable XYZ performance) include sRGB, DCI-P3, and BT.2020.
+/// mathematical conversion to measurable quantities. For example, in the case of display
+/// technology, common color encodings (relations of code value to measurable XYZ performance)
+/// include sRGB, DCI-P3, and BT.2020.  
 ///
-/// Howver, considering color as a displayed quantity only provides part of the color encoding story. In addition to relating RGB
-/// values to display measurements, one can also relate RGB values to the performance characteristics of an
-/// *input device* (i.e., a camera, or a virtual camera in a 3d renderer). Input colorimetry can be measured in real world units as well.
-/// In the case of a 3d renderer, these units are often (or at least should be) defined in the renderer as a radiometric quantity like
-/// radiance, with the relation to XYZ values dictated by a linear transformation to the rendering color space.
-/// Even in the case of a real world camera, it is not difficult to measure an input spectra with the spectrophotometer
-/// in XYZ, and then compare this to the RGB values output from the camera.
+/// However, considering color as a displayed quantity only provides part of the color encoding
+/// story. In addition to relating RGB values to display measurements, one can also relate RGB
+/// values to the performance characteristics of an *input device* (i.e., a camera, or a virtual
+/// camera in a 3d renderer). Input colorimetry can be measured in real world units as well.
 ///
-/// It is a meaningful abstraction to categorize color spaces by the “direction” of this relationship to real world
-/// quantities, which we refer to as State. Colors which are defined in relation to display
-/// characteristic are called [`Display`][crate::Display]-referred, while color spaces which are defined in relation to input
-/// devices (scenes) are [`Scene`][crate::Scene]-referred.
+/// In the case of a 3d renderer, these units are often (or at least should be) defined in the
+/// renderer as a radiometric quantity like radiance, with the relation to XYZ values dictated by a
+/// linear transformation to the rendering color space.
+///
+/// Even in the case of a real world camera, it is not difficult to measure an input spectra with
+/// the spectrophotometer in XYZ, and then compare this to the RGB values output from the camera.
+///
+/// It is a meaningful abstraction to categorize color spaces by the “direction” of this
+/// relationship to real world quantities, which we refer to as State. Colors which are defined in
+/// relation to display characteristic are called [`Display`][crate::Display]-referred, while color
+/// spaces which are defined in relation to input devices (scenes) are
+/// [`Scene`][crate::Scene]-referred.
 pub trait State: Default {
     const STATE: DynamicState;
 }
@@ -165,8 +174,8 @@ impl<T> ConvertFromAlphaRaw<T> for T {
     }
 }
 
-/// The complement of [`ConvertFromAlphaRaw`]. Performs the conversion from [alpha state][AlphaState] `Self` into `DstAlphaState`
-/// on a raw color.
+/// The complement of [`ConvertFromAlphaRaw`]. Performs the conversion from
+/// [alpha state][AlphaState] `Self` into `DstAlphaState` on a raw color.
 ///
 /// This is automatically implemented for all types that implement [`ConvertFromAlphaRaw`],
 /// much like how the [From] and [Into] traits work, where [From] gets you [Into] for free.
@@ -204,12 +213,14 @@ where
 /// A "conversion query" for a [`ColorAlpha`][crate::ColorAlpha].
 ///
 /// A type that implements this
-/// trait is able to be used as the type parameter for [`ColorAlpha::convert_to`][crate::ColorAlpha::convert_to].
+/// trait is able to be used as the type parameter for
+/// [`ColorAlpha::convert_to`][crate::ColorAlpha::convert_to].
 ///
 /// The types that implement this trait are:
 /// * [`ColorSpace`] types
 /// * [`AlphaState`] types
-/// * [`ColorAlpha`][crate::ColorAlpha] types (in which case it will be converted to that color's space and alpha state)
+/// * [`ColorAlpha`][crate::ColorAlpha] types (in which case it will be converted to that color's
+///   space and alpha state)
 pub trait ColorAlphaConversionQuery<SrcSpace: ColorSpace, SrcAlpha: AlphaState> {
     type DstSpace: ConvertFromRaw<SrcSpace>;
     type DstAlpha: ConvertFromAlphaRaw<SrcAlpha> + AlphaState;
@@ -249,11 +260,12 @@ impl<'a> From<&'a dyn AnyColor> for DynamicColor {
 }
 
 /// A type that implements this trait provides the ability to downcast from a dynamically-typed
-/// color to a statically-typed [`Color`]. This is implemented for all types that implement [`AnyColor`]
+/// color to a statically-typed [`Color`]. This is implemented for all types that implement
+/// [`AnyColor`]
 #[cfg(not(target_arch = "spirv"))]
 pub trait DynColor {
-    /// Attempt to convert to a typed `Color`. Returns an error if `self`'s color space and state do not match
-    /// the given types.
+    /// Attempt to convert to a typed `Color`. Returns an error if `self`'s color space and state
+    /// do not match the given types.
     fn downcast<Spc: ColorSpace, St: State>(&self) -> ColorResult<Color<Spc, St>>;
 
     /// Convert to a typed `Color` without checking if the color space and state types
@@ -276,11 +288,12 @@ pub trait AnyColorAlpha {
 }
 
 /// A type that implements this trait provides the ability to downcast from a dynamically-typed
-/// color to a statically-typed [`ColorAlpha`]. This is implemented for all types that implement [`AnyColorAlpha`]
+/// color to a statically-typed [`ColorAlpha`]. This is implemented for all types that implement
+/// [`AnyColorAlpha`]
 #[cfg(not(target_arch = "spirv"))]
 pub trait DynColorAlpha {
-    /// Attempt to downcast to a typed [`ColorAlpha`]. Returns an error if `self`'s color space and alpha state do not match
-    /// the given types.
+    /// Attempt to downcast to a typed [`ColorAlpha`]. Returns an error if `self`'s color space
+    /// and alpha state do not match the given types.
     fn downcast<Spc: ColorSpace, St: State, A: AlphaState>(&self) -> ColorResult<ColorAlpha<Spc, St, A>>;
 
     /// Downcast to a typed [`ColorAlpha`] without checking if the color space and state types
