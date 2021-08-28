@@ -1,0 +1,84 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="`cint` - `c`olor `int`erop"><meta name="keywords" content="rust, rustlang, rust-lang, cint"><title>cint - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../ayu.css" disabled ><script id="default-settings"></script><script src="../storage.js"></script><script src="../crates.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../cint/index.html'><div class='logo-container rust-logo'><img src='../rust-logo.png' alt='logo'></div></a><h2 class="location">Crate cint</h2><div class="block version"><p>Version 0.2.2</p></div><div class="sidebar-elems"><a id="all-types" href="all.html"><p>See all cint's items</p></a><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#traits">Traits</a></li></ul></div><div id="sidebar-vars" data-name="cint" data-ty="mod" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../settings.html" title="settings"><img src="../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">cint</a><button id="copy-path" onclick="copy_path(this)" title="copy path"><img src="../clipboard.svg" width="19" height="18" alt="Copy item import" title="Copy item import to clipboard"></button></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../src/cint/lib.rs.html#1-610" title="goto source code">[src]</a></span></h1><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h1 id="cint---color-interop" class="section-header"><a href="#cint---color-interop"><code>cint</code> - <code>c</code>olor <code>int</code>erop</a></h1>
+<p>This library provides a lean, minimal, and stable set of types
+for color interoperation between crates in Rust. Its goal is to serve the same
+function that <a href="https://docs.rs/mint/"><code>mint</code></a> provides for (linear algebra) math types.
+It does not actually provide any conversion, math, etc. for these types, but rather
+serves as a stable interface that multiple libraries can rely on and then convert
+to their own internal representations to actually use. It is also <code>#![no_std]</code>.
+<a href="https://docs.rs/bytemuck/"><code>bytemuck</code></a> impls are provided with the <code>bytemuck</code> feature.</p>
+<h1 id="how-to-use" class="section-header"><a href="#how-to-use">How to Use</a></h1>
+<p>If you have no idea about color management or encoding principles but you want to
+use this crate in your own, here’s a <em>very basic</em> rundown.</p>
+<p>If you have a color that you loaded from an 8-bit format like a PNG, JPG, etc.,
+<strong>or</strong> if you have a color that you picked from some sort of online color picker
+or in Photoshop or Aseprite, then what you have is almost certainly an <a href="struct.EncodedSrgb.html" title="EncodedSrgb&lt;u8&gt;"><code>EncodedSrgb&lt;u8&gt;</code></a>
+color. If you have a color that you loaded
+from a similar format but has floating point values instead of <code>u8</code> ints, then you
+almost certainly instead have a <a href="struct.EncodedSrgb.html" title="EncodedSrgb&lt;f32&gt;"><code>EncodedSrgb&lt;f32&gt;</code></a> color.</p>
+<p>If you “linearized” or performed “inverse gamma correction” on such a color, then you instead
+might have a <a href="struct.LinearSrgb.html" title="LinearSrgb&lt;f32&gt;"><code>LinearSrgb&lt;f32&gt;</code></a>.</p>
+<p>If you are more familiar with color encoding, then you’ll find a collection of other color spaces
+represented, as well as the generic <a href="struct.GenericColor.html" title="GenericColor&lt;ComponentTy&gt;"><code>GenericColor&lt;ComponentTy&gt;</code></a> type which
+can be used if the color space you wish to use is not represented.</p>
+<p>The <a href="trait.ColorInterop.html" title="ColorInterop">ColorInterop</a> trait exists to provide a “canonical” transformation to and from <code>cint</code> types.
+Since it is often possible to convert a color to and from multiple <code>cint</code> types, and because of
+how the Rust type inference system works, it can often be inconvenient to chain together <code>from</code>
+or <code>into</code> calls from the <a href="https://doc.rust-lang.org/1.54.0/core/convert/trait.From.html" title="From">From</a>/<a href="https://doc.rust-lang.org/1.54.0/core/convert/trait.Into.html" title="Into">Into</a> trait. <a href="trait.ColorInterop.html" title="ColorInterop">ColorInterop</a> solves this by providing a strongly
+typed “reference” conversion to/from <code>cint</code> types. This way, you can do things like:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">color_crate1</span> <span class="op">=</span> <span class="ident">color_crate2</span>.<span class="ident">into_cint</span>().<span class="ident">into</span>();
+<span class="comment">// or</span>
+<span class="kw">let</span> <span class="ident">color_crate2</span> <span class="op">=</span> <span class="ident">ColorCrate2::from_cint</span>(<span class="ident">color_crate1</span>.<span class="ident">into</span>());</pre></div>
+<p>which would otherwise be quite inconvenient. <strong>Provider crates</strong> (those that provide their own color
+types) should implement the relevant <a href="https://doc.rust-lang.org/1.54.0/core/convert/trait.From.html" title="From"><code>From</code></a>/<a href="https://doc.rust-lang.org/1.54.0/core/convert/trait.Into.html" title="Into"><code>Into</code></a> implementations to and from <code>cint</code> types, and
+also the <a href="trait.ColorInterop.html" title="ColorInterop">ColorInterop</a> trait once for each color type. The <a href="trait.ColorInterop.html#method.into_cint" title="ColorInterop::into_cint"><code>into_cint</code></a> and
+<a href="trait.ColorInterop.html#method.from_cint" title="ColorInterop::from_cint"><code>from_cint</code></a> methods will then be provided automatically.</p>
+<h2 id="colors-with-alpha-channels" class="section-header"><a href="#colors-with-alpha-channels">Colors with alpha channels</a></h2>
+<p><code>cint</code> provides the <a href="struct.Alpha.html" title="Alpha&lt;ColorTy&gt;"><code>Alpha&lt;ColorTy&gt;</code></a> and <a href="struct.PremultipliedAlpha.html" title="PremultipliedAlpha&lt;ColorTy&gt;"><code>PremultipliedAlpha&lt;ColorTy&gt;</code></a>
+structs, which are generic over the inner <code>ColorTy</code>.
+To represent an <a href="struct.EncodedSrgb.html" title="EncodedSrgb&lt;u8&gt;"><code>EncodedSrgb&lt;u8&gt;</code></a> color with a premultiplied alpha component,
+you’d use <a href="struct.PremultipliedAlpha.html" title="PremultipliedAlpha&lt;EncodedSrgb&lt;u8&gt;&gt;"><code>PremultipliedAlpha&lt;EncodedSrgb&lt;u8&gt;&gt;</code></a>. If, on the other hand, you want to represent
+an <a href="struct.Oklab.html" title="Oklab&lt;f32&gt;"><code>Oklab&lt;f32&gt;</code></a> color with an independent alpha component, you’d use <a href="struct.Alpha.html" title="Alpha&lt;Oklab&lt;f32&gt;&gt;"><code>Alpha&lt;Oklab&lt;f32&gt;&gt;</code></a></p>
+</div></details><h2 id="structs" class="section-header"><a href="#structs">Structs</a></h2>
+<table><tr class="module-item"><td><a class="struct" href="struct.Aces2065.html" title="cint::Aces2065 struct">Aces2065</a></td><td class="docblock-short"><p>A color in the ACES 2065-1 color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.AcesCc.html" title="cint::AcesCc struct">AcesCc</a></td><td class="docblock-short"><p>A color in the ACEScc color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.AcesCct.html" title="cint::AcesCct struct">AcesCct</a></td><td class="docblock-short"><p>A color in the ACEScct color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.AcesCg.html" title="cint::AcesCg struct">AcesCg</a></td><td class="docblock-short"><p>A color in the ACEScg color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Alpha.html" title="cint::Alpha struct">Alpha</a></td><td class="docblock-short"><p>A color with an alpha component.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Bt2020.html" title="cint::Bt2020 struct">Bt2020</a></td><td class="docblock-short"><p>A color in the BT.2020 color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Bt2100.html" title="cint::Bt2100 struct">Bt2100</a></td><td class="docblock-short"><p>A color in the BT.2100 color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.CieLCh.html" title="cint::CieLCh struct">CieLCh</a></td><td class="docblock-short"><p>A color in the CIE L*C*h° color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.CieLab.html" title="cint::CieLab struct">CieLab</a></td><td class="docblock-short"><p>A color in the CIE L*a*b* color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.CieXYZ.html" title="cint::CieXYZ struct">CieXYZ</a></td><td class="docblock-short"><p>A color in the CIE XYZ color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.DciP3.html" title="cint::DciP3 struct">DciP3</a></td><td class="docblock-short"><p>A color in the DCI-P3 (aka P3 DCI and P3 D60) color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.DciXYZPrime.html" title="cint::DciXYZPrime struct">DciXYZPrime</a></td><td class="docblock-short"><p>A color in the X’Y’Z’ color space, a DCI specification used for digital cinema mastering.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.DisplayP3.html" title="cint::DisplayP3 struct">DisplayP3</a></td><td class="docblock-short"><p>A color in the Display P3 (aka P3 D65) color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.EncodedBt2020.html" title="cint::EncodedBt2020 struct">EncodedBt2020</a></td><td class="docblock-short"><p>A color in the encoded BT.2020 color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.EncodedBt2100HLG.html" title="cint::EncodedBt2100HLG struct">EncodedBt2100HLG</a></td><td class="docblock-short"><p>A color in the encoded BT.2100 color space with HLG (Hybrid Log-Gamma)
+transfer function.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.EncodedBt2100PQ.html" title="cint::EncodedBt2100PQ struct">EncodedBt2100PQ</a></td><td class="docblock-short"><p>A color in the encoded BT.2100 color space with PQ (Perceptual Quantizer)
+transfer function.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.EncodedDisplayP3.html" title="cint::EncodedDisplayP3 struct">EncodedDisplayP3</a></td><td class="docblock-short"><p>A color in the Display P3 (aka P3 D65) color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.EncodedRec709.html" title="cint::EncodedRec709 struct">EncodedRec709</a></td><td class="docblock-short"><p>A color in the encoded Rec.709/BT.709 color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.EncodedSrgb.html" title="cint::EncodedSrgb struct">EncodedSrgb</a></td><td class="docblock-short"><p>A color in the encoded sRGB color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.GenericColor.html" title="cint::GenericColor struct">GenericColor</a></td><td class="docblock-short"><p>A color in a generic color space that can be represented by 3 components. The user
+is responsible for ensuring that the correct color space is respected.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Hsl.html" title="cint::Hsl struct">Hsl</a></td><td class="docblock-short"><p>A color in the HSL color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Hsv.html" title="cint::Hsv struct">Hsv</a></td><td class="docblock-short"><p>A color in the HSV color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.ICtCpHLG.html" title="cint::ICtCpHLG struct">ICtCpHLG</a></td><td class="docblock-short"><p>A color in the ICtCp color space with HLG (Hybrid Log-Gamma)
+nonlinearity.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.ICtCpPQ.html" title="cint::ICtCpPQ struct">ICtCpPQ</a></td><td class="docblock-short"><p>A color in the ICtCp color space with PQ (Perceptual Quantizer)
+nonlinearity.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.LinearSrgb.html" title="cint::LinearSrgb struct">LinearSrgb</a></td><td class="docblock-short"><p>A color in the linear (decoded) sRGB color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Oklab.html" title="cint::Oklab struct">Oklab</a></td><td class="docblock-short"><p>A color in the Oklab color space.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Oklch.html" title="cint::Oklch struct">Oklch</a></td><td class="docblock-short"><p>A color in the Oklch color space (a transformation from Oklab to LCh° coordinates).</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.PremultipliedAlpha.html" title="cint::PremultipliedAlpha struct">PremultipliedAlpha</a></td><td class="docblock-short"><p>A premultiplied color with an alpha component.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Rec709.html" title="cint::Rec709 struct">Rec709</a></td><td class="docblock-short"><p>A color in the Rec.709/BT.709 color space.</p>
+</td></tr></table><h2 id="traits" class="section-header"><a href="#traits">Traits</a></h2>
+<table><tr class="module-item"><td><a class="trait" href="trait.ColorInterop.html" title="cint::ColorInterop trait">ColorInterop</a></td><td class="docblock-short"><p>A trait that should be implemented by provider crates on their local color types so that you can call
+<code>color.to_cint()</code> and <code>Color::from_cint(cint_color)</code>.</p>
+</td></tr><tr class="module-item"><td><a class="trait" href="trait.ColorStruct.html" title="cint::ColorStruct trait">ColorStruct</a></td><td class="docblock-short"><p>A trait used to simpify the interface of the <a href="struct.Alpha.html" title="Alpha"><code>Alpha</code></a> and <a href="struct.PremultipliedAlpha.html" title="PremultipliedAlpha"><code>PremultipliedAlpha</code></a> types.</p>
+</td></tr></table></section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../" data-current-crate="cint" data-search-index-js="../search-index.js" data-search-js="../search.js"></div><script src="../main.js"></script></body></html>

@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["DynamicAlphaState","A dynamic version of a color’s alpha state. See docs for [`AlphaState`]"]],"struct":[["Premultiplied","Encodes that a color’s component values have been premultiplied with its alpha channel."],["Separate","Encodes that a color’s component values are completely separate from its alpha channel."]]});

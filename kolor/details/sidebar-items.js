@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["cat","Implements Chromatic Adaptation Transformation (CAT)."],["color",""],["conversion",""],["generated_matrices",""],["math",""],["transform",""],["xyz",""]]});

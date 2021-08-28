@@ -1,0 +1,316 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="An opinionated color management library built on top of `kolor`."><meta name="keywords" content="rust, rustlang, rust-lang, colstodian"><title>colstodian - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../ayu.css" disabled ><script id="default-settings"></script><script src="../storage.js"></script><script src="../crates.js"></script><noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../down-arrow.svg");}</style></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../colstodian/index.html'><div class='logo-container rust-logo'><img src='../rust-logo.png' alt='logo'></div></a><h2 class="location">Crate colstodian</h2><div class="block version"><p>Version 0.1.0-rc.4</p></div><div class="sidebar-elems"><a id="all-types" href="all.html"><p>See all colstodian's items</p></a><div class="block items"><ul><li><a href="#modules">Modules</a></li><li><a href="#macros">Macros</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li><li><a href="#types">Type Definitions</a></li></ul></div><div id="sidebar-vars" data-name="colstodian" data-ty="mod" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img src="../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../settings.html" title="settings"><img src="../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">colstodian</a><button id="copy-path" onclick="copy_path(this)" title="copy path"><img src="../clipboard.svg" width="19" height="18" alt="Copy item import" title="Copy item import to clipboard"></button></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../src/colstodian/lib.rs.html#1-516" title="goto source code">[src]</a></span></h1><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>An opinionated color management library built on top of <a href="https://docs.rs/kolor"><code>kolor</code></a>.</p>
+<h1 id="introduction" class="section-header"><a href="#introduction">Introduction</a></h1>
+<p><code>colstodian</code> is a practical color management library for games and graphics.
+It encodes various information about a color either statically
+in the Rust type system (as with the strongly-typed <a href="struct.Color.html" title="Color"><code>Color</code></a>),
+or as data contained in the type (as with the dynamically-typed [<code>DynamicColor</code>]).</p>
+<p>Although it is designed to prevent footguns wherever possible, in order to make use of this
+library, you should have a well-working understanding of basic color science and encoding
+principles. As such, I highly recommend you give sections 2.0 and 2.1 <a href="#res1">of this document</a>
+a read, as it is one of the main inspirations for how this library is structured:</p>
+<p>All colors in Ark will now be accompanied either statically or dynamically with two important
+pieces of metadata, a <strong>color space</strong> and a <strong>state</strong>. A basic background on color encoding is
+necessary to understand what these pieces of metadata are and why they are important.</p>
+<h2 id="color-encoding-basics" class="section-header"><a href="#color-encoding-basics">Color Encoding Basics</a></h2>
+<p>Much like how a 3d vector like a <code>glam::Vec3</code> could be used to describe any of:</p>
+<ul>
+<li>The motion vector of an object in meters per second</li>
+<li>The position of an object relative to a reference point in kilometers</li>
+<li>Three “wellness scores” for a character, which each axis representing how happy the character
+is about some aspect of their life</li>
+</ul>
+<p>A bag of components that describes “a color” could actually be interpreted in many different
+ways, and the end result of what those components mean is very different. There are two
+important pieces of metadata about a color which inform how we are meant to interpret its
+component values: the color’s <strong>Color Space</strong> and its <strong>State</strong>.</p>
+<h3 id="color-spaces" class="section-header"><a href="#color-spaces">Color Spaces</a></h3>
+<p>A “color space” is a fairly nebulous term which has different definitions depending on who you
+talk to, but the basic idea is that it provides a specific organization of color data in an
+agreed-upon format. The color space provides almost all the information needed to fully
+interpret the component data. However, it is missing one important piece of metadata which is
+relevant when working with rendered scenes that may have higher dynamic range within the scene
+than an actual display is capable of displaying (a computer monitor cannot replicate the
+brightness of the sun, but within the renderer, we want to actually simulate those high
+brightnesses). That is where the color state comes in.</p>
+<h3 id="color-state" class="section-header"><a href="#color-state">Color State</a></h3>
+<p>As we have discussed, all colors have units. Sometimes a color’s units are explicit, such as
+measuring the emitted light from a display using a radiometric measurement tool and being able
+to reference pixel values in a color space built for that. Other times, the units are only
+indirectly related to the real world, but come with a mathematical conversion to measurable
+quantities. For example, in the case of display technology, common color encodings include
+sRGB, DCI-P3, and BT.2020, which are all standards which actual monitors attempt to replicate.</p>
+<p>However, considering color as a displayed quantity only provides part of the color encoding
+story. In addition to relating color values to <strong>display measurements</strong>, as we did above, one
+can also relate color values to the performance characteristics of an <strong>input device</strong> (i.e., a
+camera, or in our case, a virtual camera in a 3d renderer). In this case, we are quantifying
+color values which originated in the (virtual) <strong>scene</strong>, rather than ones being displayed on a
+display. This kind of color can be measured in real world units as well. In the case of a 3d
+renderer, these units are often defined in the renderer as a photometric quantity like
+luminance, with the relation to reference color values dictated by a defined transformation.</p>
+<p>It is a meaningful abstraction to categorize colors based on this distinction of <em>input</em> versus
+<em>output</em> reference. We refer to this difference as a color’s <strong>State</strong>. Colors which are
+defined in relation to <em>display characteristic</em> are called <strong>Display-referred</strong>, while color
+spaces which are defined in relation to <em>input devices</em> (scenes) are <strong>Scene-referred</strong>.</p>
+<h1 id="overview" class="section-header"><a href="#overview">Overview</a></h1>
+<p><code>colstodian</code> is broken up into two ‘halves’, a statically-typed half which is meant to be
+used as much as possible to help you prevent errors at compile time through leveraging the
+Rust type system, and a dynamically-typed half which is meant to be used when serializing
+and deserializing colors and otherwise interacting with colors from dynamic sources not
+known at compile time.</p>
+<p>The core of the statically-typed half is the <a href="struct.Color.html" title="Color"><code>Color</code></a> type, which encodes two important pieces
+of metadata about the color in its type signature (<code>Color&lt;Space, State&gt;</code>): the color’s <strong>color
+space</strong> and <strong>state</strong>. If you read the color encoding basics above (you did, didn’t you? ;) )
+then you should have a decent idea of what both of these things mean. To be clear, the <strong>color
+space</strong> encodes the <strong>primaries</strong>, <strong>white point</strong>, and <strong>transfer functions</strong> upon which the
+color values are based. The <strong>state</strong> encodes in which “direction” we relate the color values
+to real-world quantities: either <strong>scene-referred</strong> or <strong>display-referred</strong>. Types which
+implement the <a href="trait.ColorSpace.html" title="ColorSpace"><code>ColorSpace</code></a> and <a href="trait.State.html" title="State"><code>State</code></a> traits encode this information statically. Color
+spaces can be found in the <a href="spaces/index.html" title="spaces"><code>spaces</code></a> module and states can be found in the <a href="states/index.html" title="states"><code>states</code></a> module.</p>
+<p>The core of the dynamically-typed half is the [<code>DynamicColor</code>] type, which encodes the color
+space and state as data stored in the type at runtime. It stores these as
+<a href="struct.DynamicColorSpace.html" title="DynamicColorSpace"><code>DynamicColorSpace</code></a>s and <a href="enum.DynamicState.html" title="DynamicState"><code>DynamicState</code></a>s.</p>
+<h1 id="example" class="section-header"><a href="#example">Example</a></h1>
+<p>Let’s say we have a color that we got from an asset loaded from a color image or a color
+picker, which are often in the encoded sRGB color space.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">loaded_asset_color</span> <span class="op">=</span> <span class="ident">color::srgb_u8</span>(<span class="number">128</span>, <span class="number">128</span>, <span class="number">128</span>).<span class="ident">to_f32</span>();</pre></div>
+<p>But wait, we can’t do much with this color yet…</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">my_other_color</span> <span class="op">=</span> <span class="ident">loaded_asset_color</span> <span class="op">*</span> <span class="number">5.0</span>; <span class="comment">// oops, compile error!</span></pre></div>
+<p>This color is encoded in a non-linear format. You can think of this much like as if a file was
+compressed as a ZIP. Doing operations directly on the zipped bytes is nonsensical. First we
+need to decode it to work on the raw data. In the same way, before we can do math on this
+color, we need to convert it to a working color space.</p>
+<p>Encoded color spaces all have a working color space that they can decode to directly. This
+will be the least expensive and most natural conversion if you want to work with them directly.
+For example, an <a href="spaces/struct.EncodedSrgb.html" title="EncodedSrgb">EncodedSrgb</a> color will decode to a <a href="spaces/struct.LinearSrgb.html" title="LinearSrgb">LinearSrgb</a> color:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="comment">// Note the type annotation here is unnecessary, but is useful for illustrative purposes.</span>
+<span class="kw">let</span> <span class="ident">decoded</span>: <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">LinearSrgb</span>, <span class="ident">Display</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">loaded_asset_color</span>.<span class="ident">decode</span>();
+
+<span class="kw">let</span> <span class="ident">my_other_color</span> <span class="op">=</span> <span class="ident">decoded</span> <span class="op">*</span> <span class="number">0.5</span>; <span class="comment">// yay, it works!</span></pre></div>
+<p>You can also convert an encoded color fully to a specific working space if you have one
+in mind. For example, if you want to blend between two colors, you might convert them to
+the <a href="spaces/struct.Oklab.html" title="Oklab">Oklab</a> color space:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+
+<span class="kw">let</span> <span class="ident">oklab1</span> <span class="op">=</span> <span class="ident">color::srgb_u8</span>(<span class="number">128</span>, <span class="number">12</span>, <span class="number">57</span>).<span class="ident">to_f32</span>().<span class="ident">convert</span>::<span class="op">&lt;</span><span class="ident">Oklab</span><span class="op">&gt;</span>();
+<span class="kw">let</span> <span class="ident">oklab2</span> <span class="op">=</span> <span class="ident">color::srgb_u8</span>(<span class="number">25</span>, <span class="number">35</span>, <span class="number">68</span>).<span class="ident">to_f32</span>().<span class="ident">convert</span>::<span class="op">&lt;</span><span class="ident">Oklab</span><span class="op">&gt;</span>();
+
+<span class="kw">let</span> <span class="ident">blended</span> <span class="op">=</span> <span class="ident">oklab1</span>.<span class="ident">blend</span>(<span class="ident">oklab2</span>, <span class="number">0.5</span>); <span class="comment">// Blend half way between the two colors</span></pre></div>
+<p>This is also the first time we see the <a href="struct.Color.html#method.convert" title="Color::convert"><code>convert</code></a> method, which we’ll be
+using, along with its sibling <a href="struct.Color.html#method.convert_to" title="Color::convert_to"><code>convert_to</code></a>, to do most of our conversions.
+You can use this to do pretty much any conversion you like, so long as you stay within the same
+<a href="trait.State.html" title="State">State</a>. See the docs of that method for more information. Generally, you’ll want to convert
+the color to some output color space before actually using it. It’s quite common to use
+<a href="spaces/struct.EncodedSrgb.html" title="EncodedSrgb">EncodedSrgb</a> for this purpose. This is also quite simple with <code>convert</code>:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="comment">// Note the slightly different style. Here we annotate the type of `output`</span>
+<span class="comment">// rather than using the turbofish operator to specify the destination color</span>
+<span class="comment">// space, and Rust infers the type on the `convert` method for us.</span>
+<span class="kw">let</span> <span class="ident">output</span>: <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">EncodedSrgb</span>, <span class="ident">Display</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">blended</span>.<span class="ident">convert</span>();
+
+<span class="comment">// Some applications will want a color in the form of an array of `u8`s or a packed `u32`.</span>
+<span class="comment">// Certain encoded color spaces will allow you to convert a color in that</span>
+<span class="comment">// space to/from a 8-bit encoded form. EncodedSrgb is one of those:</span>
+<span class="kw">let</span> <span class="ident">output_u8</span>: <span class="ident">ColorU8</span><span class="op">&lt;</span><span class="kw">_</span>, <span class="kw">_</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">output</span>.<span class="ident">to_u8</span>();
+
+<span class="comment">// From here we can either get the raw array of `u8`s, or if it was a</span>
+<span class="comment">// `ColorAlphaU8`, we could convert it to a packed `u32`.</span>
+<span class="kw">let</span> <span class="ident">output_u8_array</span>: [<span class="ident">u8</span>; <span class="number">3</span>] <span class="op">=</span> <span class="ident">output_u8</span>.<span class="ident">raw</span>;</pre></div>
+<p>Here we can see an example of where <a href="struct.Color.html#method.convert_to" title="Color::convert_to"><code>convert_to</code></a> may be preferrable over
+<a href="struct.Color.html#method.convert" title="Color::convert"><code>convert</code></a>. Notice how we are using the type <a href="struct.Color.html" title="Color&lt;EncodedSrgb, Display&gt;"><code>Color&lt;EncodedSrgb, Display&gt;</code></a>
+quite often? You might want to create a type alias for this type called, for example, <code>Asset</code>.
+Wouldn’t it be convenient to also be able to <code>convert</code> to a type alias of <a href="struct.Color.html" title="Color"><code>Color</code></a>? Well, with
+<a href="struct.Color.html#method.convert_to" title="Color::convert_to"><code>convert_to</code></a>, you can! This is particularly useful when you don’t want to
+bind the output to a variable directly, so you can’t take advantage of type inference and
+need to use the turbofish operator. For example, let’s rewrite the previous blending example:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="comment">// You could have these defined and used throughout your codebase.</span>
+<span class="kw">type</span> <span class="ident">Perceptual</span> <span class="op">=</span> <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">Oklab</span>, <span class="ident">Display</span><span class="op">&gt;</span>;
+<span class="kw">type</span> <span class="ident">Srgb</span> <span class="op">=</span> <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">EncodedSrgb</span>, <span class="ident">Display</span><span class="op">&gt;</span>;
+
+<span class="kw">let</span> <span class="ident">color_1</span> <span class="op">=</span> <span class="ident">color::srgb_u8</span>(<span class="number">128</span>, <span class="number">12</span>, <span class="number">57</span>).<span class="ident">to_f32</span>();
+<span class="kw">let</span> <span class="ident">color_2</span> <span class="op">=</span> <span class="ident">color::srgb_u8</span>(<span class="number">25</span>, <span class="number">35</span>, <span class="number">68</span>).<span class="ident">to_f32</span>();
+
+<span class="kw">let</span> <span class="ident">blended_u8</span> <span class="op">=</span> <span class="ident">color_1</span>.<span class="ident">convert_to</span>::<span class="op">&lt;</span><span class="ident">Perceptual</span><span class="op">&gt;</span>().<span class="ident">blend</span>(
+    <span class="ident">color_2</span>.<span class="ident">convert_to</span>::<span class="op">&lt;</span><span class="ident">Perceptual</span><span class="op">&gt;</span>(),
+    <span class="number">0.5</span>
+).<span class="ident">convert_to</span>::<span class="op">&lt;</span><span class="ident">Srgb</span><span class="op">&gt;</span>().<span class="ident">to_u8</span>();</pre></div>
+<p><a href="struct.Color.html#method.convert_to" title="Color::convert_to"><code>convert_to</code></a> can also take a <a href="trait.ColorSpace.html" title="ColorSpace"><code>ColorSpace</code></a> as a Query directly. However,
+because it’s more generic than <a href="struct.Color.html#method.convert" title="Color::convert"><code>convert</code></a>, Rust’s type system will often not
+be able to infer the type of Query, for example annotating a type as being a specific <a href="struct.Color.html" title="Color"><code>Color</code></a>
+type and then calling <code>other_color.convert_to()</code> will give you a type annotation needed error.</p>
+<p>Going back to what you can and cannot do with different <a href="struct.Color.html" title="Color"><code>Color</code></a> types,
+note that you can break out of the restrictions imposed by the type system
+or otherwise get the raw color by accessing <code>color.raw</code>:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">encoded_color</span> <span class="op">=</span> <span class="ident">color::srgb_u8</span>(<span class="number">127</span>, <span class="number">127</span>, <span class="number">127</span>).<span class="ident">to_f32</span>();
+<span class="ident">encoded_color</span>.<span class="ident">raw</span> <span class="kw-2">*</span><span class="op">=</span> <span class="number">0.5</span>; <span class="comment">// This works! But be careful that you know what you&#39;re doing.</span></pre></div>
+<p>You can also access the components of a color by that component’s name. For example,
+a <a href="spaces/struct.LinearSrgb.html" title="LinearSrgb">Linear sRGB</a> color has components <code>r</code>, <code>g</code>, and <code>b</code>, so you can do:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">red_component</span> <span class="op">=</span> <span class="ident">linear_srgb_color</span>.<span class="ident">r</span>;</pre></div>
+<p>However, if a color is in a different color space, for example <a href="spaces/struct.ICtCpPQ.html" title="ICtCpPQ"><code>ICtCpPQ</code></a>, which has different
+component names, then you would access those components accordingly:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">col</span>: <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">ICtCpPQ</span>, <span class="ident">Display</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Color::new</span>(<span class="number">1.0</span>, <span class="number">0.2</span>, <span class="number">0.2</span>);
+
+<span class="kw">let</span> <span class="ident">intensity</span> <span class="op">=</span> <span class="ident">col</span>.<span class="ident">i</span>; <span class="comment">// access I (Intensity) component through .i</span>
+<span class="kw">let</span> <span class="ident">ct</span> <span class="op">=</span> <span class="ident">col</span>.<span class="ident">ct</span>; <span class="comment">// access Ct (Chroma-Tritan) component through .ct</span>
+<span class="kw">let</span> <span class="ident">cp</span> <span class="op">=</span> <span class="ident">col</span>.<span class="ident">cp</span>; <span class="comment">// access Cp (Chroma-Protan) component through .cp</span></pre></div>
+<p>One more quite useful tool is the <a href="trait.ColorInto.html" title="ColorInto"><code>ColorInto</code></a> trait. <a href="trait.ColorInto.html" title="ColorInto"><code>ColorInto</code></a> is
+a trait meant to be used as a replacement for <a href="https://doc.rust-lang.org/1.54.0/core/convert/trait.Into.html" title="Into"><code>Into</code></a> in situations where you want
+to bound a type as being able to be converted into a specific type of color. You can
+call <a href="trait.ColorInto.html#tymethod.into" title="ColorInto::into"><code>.into</code></a> on a type that implements <a href="trait.ColorInto.html" title="ColorInto&lt;T&gt;"><code>ColorInto&lt;T&gt;</code></a>
+and you will get a <code>T</code>.</p>
+<p>This example snippet puts together much of what we’ve learned so far.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">fn</span> <span class="ident">tint_color</span>(<span class="ident">input_color</span>: <span class="kw">impl</span> <span class="ident">ColorInto</span><span class="op">&lt;</span><span class="ident">Color</span><span class="op">&lt;</span><span class="ident">AcesCg</span>, <span class="ident">Display</span><span class="op">&gt;</span><span class="op">&gt;</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">AcesCg</span>, <span class="ident">Display</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">color</span> <span class="op">=</span> <span class="ident">input_color</span>.<span class="ident">into</span>();
+    <span class="kw">let</span> <span class="ident">tint</span>: <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">AcesCg</span>, <span class="ident">Display</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">Color::new</span>(<span class="number">0.5</span>, <span class="number">0.8</span>, <span class="number">0.4</span>);
+    <span class="ident">color</span> <span class="op">*</span> <span class="ident">tint</span>
+}
+
+<span class="kw">let</span> <span class="ident">color</span> <span class="op">=</span> <span class="ident">color::srgb_u8</span>(<span class="number">225</span>, <span class="number">200</span>, <span class="number">86</span>).<span class="ident">to_f32</span>();
+<span class="kw">let</span> <span class="ident">tinted</span>: <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">EncodedSrgb</span>, <span class="ident">Display</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">tint_color</span>(<span class="ident">color</span>).<span class="ident">convert</span>();
+
+<span class="macro">println!</span>(<span class="string">&quot;Pre-tint: {}, Post-tint: {}&quot;</span>, <span class="ident">color</span>, <span class="ident">tinted</span>);</pre></div>
+<p>Now, let’s go back to our previous <code>decoded</code> color from the begining.</p>
+<p>Let’s say that instead of blending perceptually between colors, we are creating a 3d rendering
+engine. In this case, we probably want to do the actual shading math in a color space with a
+wider (sharper) gamut (the reasons for this are outside the scope of this demo). The
+<a href="spaces/struct.AcesCg.html" title="AcesCg">ACEScg</a> space is ideal for this.</p>
+<p>Since both color spaces are linear, the ideally optimized transformation is a simple
+3x3 matrix * 3 component vector multiplication. <code>colstodian</code> is architected such that we can
+still just use the <a href="struct.Color.html#method.convert" title="Color::convert"><code>convert</code></a> method to convert between these spaces and it
+will indeed optimize fully down to just that multiplication.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">col</span>: <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">AcesCg</span>, <span class="ident">Display</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">decoded</span>.<span class="ident">convert</span>();</pre></div>
+<p>Now, we come to a bit of a subtle operation. Here we will convert the color from being in a
+display-reffered state to being in a scene-referred state. This operation is not necessarily
+concrete, and is dependent on the thing you are converting. Going from display-referred to
+scene-referred, we are converting from a bounded dynamic range with physical reference units
+for the color component values being (with a properly calibrated monitor) the <strong>display
+standard specification</strong>, to an unbounded dynamic range, with color components in the range
+<code>[0..inf)</code> and the physical reference units for these component values being the units used in
+the <strong>scene,</strong> which are defined by the renderer itself. In most cases, these units will be in
+a measurement of photometric luminance like
+<a href="https://en.wikipedia.org/wiki/Candela_per_square_metre">Cd/m^2 aka nits</a>.</p>
+<p>One possible use of this conversion is the case of an emissive texture, where we may want to
+modify the bounded <a href="https://en.wikipedia.org/wiki/Illuminance">illuminance (i.e. lux)</a> of the
+color we stored in the texture by some unbounded <em>power</em> value stored elsewhere. In this way,
+we can make emissive materials just as powerful as any other light in the scene.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">power</span> <span class="op">=</span> <span class="number">5.0</span>; <span class="comment">// Say you loaded this from an asset somewhere</span>
+
+<span class="comment">// Note the `Scene` state... previously, all colors have been in `Display` state.</span>
+<span class="kw">let</span> <span class="ident">emissive_col</span>: <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">AcesCg</span>, <span class="ident">Scene</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">col</span>.<span class="ident">convert_state</span>(<span class="op">|</span><span class="ident">c</span><span class="op">|</span> <span class="ident">c</span> <span class="op">*</span> <span class="ident">power</span>);</pre></div>
+<p>Now we can do the actual rendering math, using this scene-referred color value.</p>
+<pre><code class="language-text">// ... rendering math here ...
+</code></pre>
+<p>Okay, so let’s say we’ve ended up with a final color for a pixel, which is still scene-referred
+in the ACEScg color space, representing the luminance reaching the camera from a specific
+direction (namely, the direction corresponding to the pixel we are shading).</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">rendered_col</span> <span class="op">=</span> <span class="ident">color::acescg</span>::<span class="op">&lt;</span><span class="ident">Scene</span><span class="op">&gt;</span>(<span class="number">5.0</span>, <span class="number">4.0</span>, <span class="number">4.5</span>); <span class="comment">// let&#39;s just say this is the computed final color.</span></pre></div>
+<p>Now we need to do the opposite of what we did before and map the infinite dynamic range of a
+scene-referred color outputted by the renderer to the finite dynamic range which can be
+displayed on a display. For an output display which is “SDR” (i.e. not an HDR-enabled TV or
+monitor), a fairly aggressive S-curve style tonemap is a good option. We provide a couple of
+options in the <a href="tonemap/index.html" title="tonemap"><code>tonemap</code></a> module.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">tonemap</span>::{<span class="ident">Tonemapper</span>, <span class="ident">PerceptualTonemapper</span>, <span class="ident">PerceptualTonemapperParams</span>};
+
+<span class="comment">// In theory you could change the parameters to taste here.</span>
+<span class="kw">let</span> <span class="ident">params</span> <span class="op">=</span> <span class="ident">PerceptualTonemapperParams::default</span>();
+<span class="kw">let</span> <span class="ident">tonemapped</span>: <span class="ident">Color</span><span class="op">&lt;</span><span class="ident">AcesCg</span>, <span class="ident">Display</span><span class="op">&gt;</span> <span class="op">=</span> <span class="ident">PerceptualTonemapper::tonemap</span>(<span class="ident">rendered_col</span>, <span class="ident">params</span>).<span class="ident">convert</span>();</pre></div>
+<p>Now, our color is display-referred within a finite (<code>[0..1]</code>) dynamic range. However, we
+haven’t chosen an actual specific display to encode it for. This is what the sRGB standard can
+help with, which is most likely the standard upon which an LDR monitor will be based. We can
+convert our color to <a href="spaces/struct.EncodedSrgb.html" title="EncodedSrgb">encoded sRGB</a> just like we showed before.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">encoded</span> <span class="op">=</span> <span class="ident">tonemapped</span>.<span class="ident">convert</span>::<span class="op">&lt;</span><span class="ident">EncodedSrgb</span><span class="op">&gt;</span>(); <span class="comment">// Ready to display or write to an image.</span>
+
+<span class="comment">// Again, if your output format needs `u8`s (say, an 8-bit PNG image), you can use the `to_u8()` method.</span>
+<span class="kw">let</span> <span class="ident">u8s</span>: [<span class="ident">u8</span>; <span class="number">3</span>] <span class="op">=</span> <span class="ident">encoded</span>.<span class="ident">to_u8</span>().<span class="ident">raw</span>;</pre></div>
+<p>Alternatively, we could output to a different display, for example to a wide-gamut but still
+LDR BT.2020 calibrated display:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">let</span> <span class="ident">encoded</span> <span class="op">=</span> <span class="ident">tonemapped</span>.<span class="ident">convert</span>::<span class="op">&lt;</span><span class="ident">EncodedBt2020</span><span class="op">&gt;</span>();</pre></div>
+<p>This doesn’t cover displaying to an HDR display yet, nor the use of colors with an alpha
+channel, but it soon will!</p>
+<h1 id="further-resources" class="section-header"><a href="#further-resources">Further Resources</a></h1>
+<p>Here is a curated list of further resources to check out for information about color encoding
+and management:</p>
+<ol>
+<li><span id="res1">An overview of color management from a cinematic perspective</span>
+(HIGHLY recommended sections 2.0 and 2.1):<br/>
+<a href="http://github.com/jeremyselan/cinematiccolor/raw/master/ves/Cinematic_Color_VES.pdf">http://github.com/jeremyselan/cinematiccolor/raw/master/ves/Cinematic_Color_VES.pdf</a></li>
+<li>The Hitchhiker’s Guide to Digital Color:<br/> <a href="https://hg2dc.com/">https://hg2dc.com/</a></li>
+<li>Alex Fry (DICE/Frostbite) on HDR color management in Frostbite:<br/>
+<a href="https://www.youtube.com/watch?v=7z_EIjNG0pQ">https://www.youtube.com/watch?v=7z_EIjNG0pQ</a></li>
+<li>Timothy Lottes (AMD) on “variable” dynamic range color management:<br/>
+<a href="https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day">https://www.gdcvault.com/play/1023512/Advanced-Graphics-Techniques-Tutorial-Day</a></li>
+<li>Hajime Uchimura and Kentaro Suzuki on HDR and Wide color strategies in Gran Turismo SPORT:
+<br/> <a href="https://www.polyphony.co.jp/publications/sa2018/">https://www.polyphony.co.jp/publications/sa2018/</a></li>
+</ol>
+</div></details><h2 id="reexports" class="section-header"><a href="#reexports">Re-exports</a></h2>
+<table><tr class="import-item"><td><code>pub use <a class="mod" href="../kolor/index.html" title="mod kolor">kolor</a>;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use <a class="mod" href="spaces/index.html" title="mod colstodian::spaces">spaces</a>::*;</code></td><td class="docblock-short"></td></tr><tr class="import-item"><td><code>pub use <a class="mod" href="component_structs/index.html" title="mod colstodian::component_structs">component_structs</a>::*;</code></td><td class="docblock-short"></td></tr></table><h2 id="modules" class="section-header"><a href="#modules">Modules</a></h2>
+<table><tr class="module-item"><td><a class="mod" href="alpha_states/index.html" title="colstodian::alpha_states mod">alpha_states</a></td><td class="docblock-short"><p>Contains types relating to a color’s alpha state.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="color/index.html" title="colstodian::color mod">color</a></td><td class="docblock-short"><p>Contains color types and helper functions.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="component_structs/index.html" title="colstodian::component_structs mod">component_structs</a></td><td class="docblock-short"><p>Structs that act as bags of named components which <a href="struct.Color.html" title="super::Color"><code>Color</code></a>s of different color spaces
+may be <code>Deref</code>erenced to in order to gain more appropriate dot syntax for that color space.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="error/index.html" title="colstodian::error mod">error</a></td><td class="docblock-short"><p>Error handling types.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="spaces/index.html" title="colstodian::spaces mod">spaces</a></td><td class="docblock-short"><p>Types representing different color spaces.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="states/index.html" title="colstodian::states mod">states</a></td><td class="docblock-short"><p>Contains types relating to a color’s state.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="tonemap/index.html" title="colstodian::tonemap mod">tonemap</a></td><td class="docblock-short"><p>Contains tonemappers, useful for mapping scene-referred HDR values into display-referred values
+within the concrete dynamic range of a specific display.</p>
+</td></tr><tr class="module-item"><td><a class="mod" href="traits/index.html" title="colstodian::traits mod">traits</a></td><td class="docblock-short"><p>The traits which form the backbone of the strongly-typed <a href="struct.Color.html" title="Color"><code>Color</code></a> &amp; <a href="color/struct.ColorAlpha.html" title="ColorAlpha"><code>ColorAlpha</code></a>.</p>
+</td></tr></table><h2 id="macros" class="section-header"><a href="#macros">Macros</a></h2>
+<table><tr class="module-item"><td><a class="macro" href="macro.const_color.html" title="colstodian::const_color macro">const_color</a></td><td class="docblock-short"></td></tr><tr class="module-item"><td><a class="macro" href="macro.const_color_alpha.html" title="colstodian::const_color_alpha macro">const_color_alpha</a></td><td class="docblock-short"></td></tr></table><h2 id="structs" class="section-header"><a href="#structs">Structs</a></h2>
+<table><tr class="module-item"><td><a class="struct" href="struct.Color.html" title="colstodian::Color struct">Color</a></td><td class="docblock-short"><p>A strongly typed color, parameterized by a color space and state.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.ColorAlpha.html" title="colstodian::ColorAlpha struct">ColorAlpha</a></td><td class="docblock-short"><p>A strongly typed color with an alpha channel, parameterized by a color space, state, and alpha state.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.ColorU8.html" title="colstodian::ColorU8 struct">ColorU8</a></td><td class="docblock-short"><p>An encoded color, 8-bit per component, 24-bit total.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.ColorU8Alpha.html" title="colstodian::ColorU8Alpha struct">ColorU8Alpha</a></td><td class="docblock-short"><p>An encoded color with alpha, 8-bit per component, 32-bit total.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Display.html" title="colstodian::Display struct">Display</a></td><td class="docblock-short"><p>Encodes that a color is <a href="struct.Display.html" title="Display"><code>Display</code></a>-referred (in the range [0..1], defined
+in relation to a display standard).</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.DynamicColorSpace.html" title="colstodian::DynamicColorSpace struct">DynamicColorSpace</a></td><td class="docblock-short"><p>A color space defined in data by its <a href="../kolor/details/color/enum.RGBPrimaries.html" title="RGBPrimaries">Primaries</a>, <a href="../kolor/details/color/enum.WhitePoint.html" title="WhitePoint">white point</a>, and an optional <a href="../kolor/details/color/enum.TransformFn.html" title="TransformFn">invertible transform function</a>.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Premultiplied.html" title="colstodian::Premultiplied struct">Premultiplied</a></td><td class="docblock-short"><p>Encodes that a color’s component values have been premultiplied with its
+alpha channel.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Scene.html" title="colstodian::Scene struct">Scene</a></td><td class="docblock-short"><p>Encodes that a color is <a href="struct.Scene.html" title="Scene"><code>Scene</code></a>-referred (in the range [0..inf)), defined in relation
+to input values from a (virtual) camera or other input device. Usually
+representing something like radiance in an HDR rendering pipeline.</p>
+</td></tr><tr class="module-item"><td><a class="struct" href="struct.Separate.html" title="colstodian::Separate struct">Separate</a></td><td class="docblock-short"><p>Encodes that a color’s component values are completely separate from its
+alpha channel.</p>
+</td></tr></table><h2 id="enums" class="section-header"><a href="#enums">Enums</a></h2>
+<table><tr class="module-item"><td><a class="enum" href="enum.ColorError.html" title="colstodian::ColorError enum">ColorError</a></td><td class="docblock-short"><p>Any error which can occur within the library.</p>
+</td></tr><tr class="module-item"><td><a class="enum" href="enum.DynamicAlphaState.html" title="colstodian::DynamicAlphaState enum">DynamicAlphaState</a></td><td class="docblock-short"><p>A dynamic version of a color’s alpha state. See docs for <a href="trait.AlphaState.html" title="AlphaState"><code>AlphaState</code></a></p>
+</td></tr><tr class="module-item"><td><a class="enum" href="enum.DynamicState.html" title="colstodian::DynamicState enum">DynamicState</a></td><td class="docblock-short"><p>A dynamic version of a color’s state. See docs for <a href="trait.State.html" title="State"><code>State</code></a></p>
+</td></tr></table><h2 id="traits" class="section-header"><a href="#traits">Traits</a></h2>
+<table><tr class="module-item"><td><a class="trait" href="trait.AlphaState.html" title="colstodian::AlphaState trait">AlphaState</a></td><td class="docblock-short"><p>A type that implements this trait represents a color’s alpha state.</p>
+</td></tr><tr class="module-item"><td><a class="trait" href="trait.ColorInto.html" title="colstodian::ColorInto trait">ColorInto</a></td><td class="docblock-short"><p>A trait meant to be used as a replacement for <a href="https://doc.rust-lang.org/1.54.0/core/convert/trait.Into.html" title="Into"><code>Into</code></a> in situations where you want
+to bound a type as being able to be converted into a specific type of color.</p>
+</td></tr><tr class="module-item"><td><a class="trait" href="trait.ColorSpace.html" title="colstodian::ColorSpace trait">ColorSpace</a></td><td class="docblock-short"><p>A type that implements ColorSpace represents a specific color space. See the documentation
+of <a href="struct.DynamicColorSpace.html" title="DynamicColorSpace"><code>DynamicColorSpace</code></a> for more information about what a color space is.</p>
+</td></tr><tr class="module-item"><td><a class="trait" href="trait.State.html" title="colstodian::State trait">State</a></td><td class="docblock-short"><p>A type that implements this trait represents a color’s State.</p>
+</td></tr></table><h2 id="types" class="section-header"><a href="#types">Type Definitions</a></h2>
+<table><tr class="module-item"><td><a class="type" href="type.ColorResult.html" title="colstodian::ColorResult type">ColorResult</a></td><td class="docblock-short"></td></tr></table></section><section id="search" class="content hidden"></section><div id="rustdoc-vars" data-root-path="../" data-current-crate="colstodian" data-search-index-js="../search-index.js" data-search-js="../search.js"></div><script src="../main.js"></script></body></html>

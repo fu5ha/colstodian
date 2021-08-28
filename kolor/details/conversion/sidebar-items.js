@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ColorConversion","[ColorConversion] defines an operation that maps a 3-component vector from a source [ColorSpace] to a destination [ColorSpace]."],["LinearColorConversion","A transformation from one linear color space to another."]]});

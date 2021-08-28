@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["ICtCp_HLG_to_RGB","Inverse ICtCp with the HLG transfer function"],["ICtCp_PQ_to_RGB","Inverse ICtCp with the PQ transfer function"],["RGB_to_ICtCp_HLG","ICtCp with the HLG transfer function"],["RGB_to_ICtCp_PQ","ICtCp with the PQ transfer function"]]});

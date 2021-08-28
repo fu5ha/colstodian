@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["ARIB_HLG_oetf","ARIB STD-B67 or “Hybrid Log-Gamma”"],["ARIB_HLG_oetf_inverse","Inverse of ARIB STD-B67 or “Hybrid Log-Gamma”"]]});
