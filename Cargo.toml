@@ -16,8 +16,8 @@ features = ["std", "with-serde", "with-bytemuck"]
 
 [dependencies]
 # kolor = { version = "^0.1.6", default-features = false, features = ["glam", "f32", "color-matrices"] }
-# kolor = { version = "^0.1.6", default-features = false, features = ["glam", "f32", "color-matrices"], path = "../kolor/build/kolor" }
-kolor = { version = "^0.1.6", default-features = false, features = ["glam", "f32", "color-matrices"], git = "https://github.com/termhn/kolor", rev = "5daf3d8" }
+kolor = { version = "^0.1.6", default-features = false, features = ["glam", "f32", "color-matrices"], path = "../kolor/build/kolor" }
+# kolor = { version = "^0.1.6", default-features = false, features = ["glam", "f32", "color-matrices"], git = "https://github.com/termhn/kolor", rev = "5daf3d8" }
 glam = { version = "0.17", default-features = false } # keep in sync with kolor
 serde = { version = "1", optional = true, features = ["derive"] }
 bytemuck = { version = "1.5.1", optional = true }

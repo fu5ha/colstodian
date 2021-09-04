@@ -16,7 +16,7 @@ mod color_alpha;
 pub use color_alpha::{linear_srgba, srgba, ColorAlpha, ColorU8Alpha};
 
 #[cfg(not(target_arch = "spirv"))]
-pub use color_alpha::srgba_u8;
+pub use color_alpha::{DynamicColorAlpha, srgba_u8};
 
 /// A strongly typed color, parameterized by a color space and state.
 ///
@@ -653,6 +653,7 @@ mod dyn_col {
         pub fn with_alpha(&self, alpha: f32, alpha_state: DynamicAlphaState) -> DynamicColorAlpha {
             DynamicColorAlpha {
                 raw: self.raw.extend(alpha),
+                state: self.state,
                 space: self.space,
                 alpha_state,
             }

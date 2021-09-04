@@ -2,13 +2,14 @@ use crate::{
     Color, ColorAlpha, DynamicAlphaState, DynamicColorSpace, DynamicState, Premultiplied, Separate,
 };
 
-/*
 #[cfg(not(target_arch = "spirv"))]
 use crate::{ColorResult, DynamicColor, DynamicColorAlpha};
-*/
 
 #[cfg(doc)]
 use crate::{ColorU8, ColorU8Alpha};
+
+#[cfg(not(target_arch = "spirv"))]
+use glam::Vec4;
 
 use glam::Vec3;
 
@@ -278,11 +279,12 @@ pub trait DynColor {
 pub trait AnyColorAlpha {
     fn raw(&self) -> Vec4;
     fn space(&self) -> DynamicColorSpace;
+    fn state(&self) -> DynamicState;
     fn alpha_state(&self) -> DynamicAlphaState;
 
     /// Upcasts `self` into a [`DynamicColorAlpha`]
     fn dynamic(&self) -> DynamicColorAlpha {
-        DynamicColorAlpha::new(self.raw(), self.space(), self.alpha_state())
+        DynamicColorAlpha::new(self.raw(), self.space(), self.state(), self.alpha_state())
     }
 }
 
