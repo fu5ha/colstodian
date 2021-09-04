@@ -1,14 +1,6 @@
 use crate::{traits::*, Premultiplied};
 use crate::{AcesCg, Display, EncodedSrgb, LinearSrgb, Separate};
 
-/*
-#[cfg(not(target_arch = "spirv"))]
-use crate::{
-    error::{DowncastError, DynamicConversionError},
-    ColorResult,
-};
-*/
-
 use glam::{const_vec3, Vec3};
 #[cfg(all(not(feature = "std"), feature = "libm"))]
 use num_traits::Float;
@@ -540,163 +532,169 @@ mod color_u8 {
 #[cfg(not(target_arch = "spirv"))]
 pub use color_u8::ColorU8;
 
-/*
-/// A dynamic color, with its Space and State defined
-/// as data. This is mostly useful for (de)serialization.
-///
-/// See [`Color`], [`ColorSpace`] and [`State`] for more.
-#[derive(Copy, Clone, PartialEq, Debug)]
-#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 #[cfg(not(target_arch = "spirv"))]
-pub struct DynamicColor {
-    /// The raw tristimulus value of the color. Be careful when modifying this directly, i.e.
-    /// don't multiply two Colors' raw values unless they are in the same color space and state.
-    pub raw: Vec3,
-    pub space: DynamicColorSpace,
-    pub state: DynamicState,
-}
+mod dyn_col {
+    use super::*;
+    use crate::{
+        error::{DowncastError, DynamicConversionError},
+        traits::{AnyColor, DynColor},
+        ColorResult, DynamicColorSpace, DynamicState, DynamicAlphaState,
+    };
 
-#[cfg(not(target_arch = "spirv"))]
-impl AnyColor for DynamicColor {
-    #[inline]
-    fn space(&self) -> DynamicColorSpace {
-        self.space
-    }
-
-    #[inline]
-    fn state(&self) -> DynamicState {
-        self.state
-    }
-
-    #[inline]
-    fn raw(&self) -> Vec3 {
-        self.raw
-    }
-}
-
-#[cfg(not(target_arch = "spirv"))]
-impl DynamicColor {
-    /// Create a new [`DynamicColor`] with specified raw color components, color space, and state.
-    pub fn new(raw: Vec3, space: DynamicColorSpace, state: DynamicState) -> Self {
-        Self { raw, space, state }
-    }
-
-    /// Convert `self` to the given color space. Must not attempt to convert to or from
-    /// a nonlinear color space while in scene-referred state.
-    pub fn convert(self, dest_space: DynamicColorSpace) -> ColorResult<Self> {
-        if self.state == DynamicState::Scene && (!self.space.is_linear() || !dest_space.is_linear())
-        {
-            return Err(DynamicConversionError::NonlinearConversionInSceneState(
-                self.space, dest_space,
-            )
-            .into());
-        }
-        let conversion = kolor::ColorConversion::new(self.space, dest_space);
-        let raw = conversion.convert(self.raw);
-        Ok(Self {
-            raw,
-            space: dest_space,
-            state: self.state,
-        })
-    }
-
-    /// Convert `self`'s state to the given state using the given conversion function.
+    /// A dynamic color, with its Space and State defined
+    /// as data. This is mostly useful for (de)serialization.
     ///
-    /// `self.space` must be linear. See docs for [`Color::<Space, State>::convert_state`]
-    pub fn convert_state<F>(self, dest_state: DynamicState, conversion: F) -> ColorResult<Self>
-    where
-        F: FnOnce(Vec3) -> Vec3,
-    {
-        if !self.space.is_linear() {
-            return Err(DynamicConversionError::StateChangeInNonlinearSpace(
-                self.space, self.state, dest_state,
-            )
-            .into());
-        }
-        Ok(Self {
-            raw: conversion(self.raw),
-            space: self.space,
-            state: dest_state,
-        })
+    /// See [`Color`], [`ColorSpace`] and [`State`] for more.
+    #[derive(Copy, Clone, PartialEq, Debug)]
+    #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+    pub struct DynamicColor {
+        /// The raw tristimulus value of the color. Be careful when modifying this directly, i.e.
+        /// don't multiply two Colors' raw values unless they are in the same color space and state.
+        pub raw: Vec3,
+        pub space: DynamicColorSpace,
+        pub state: DynamicState,
     }
 
-    /// Convert `self` to the specified space and downcast it to a typed [`Color`] with the space
-    /// and state specified. `self` must already be in the correct [DynamicState]
-    pub fn downcast_convert<DstSpace, DstState>(self) -> ColorResult<Color<DstSpace, DstState>>
-    where
-        DstSpace: ColorSpace,
-        DstState: State,
-    {
-        if self.state() != DstState::STATE {
-            return Err(DowncastError::MismatchedState(self.state(), DstState::STATE).into());
+    impl AnyColor for DynamicColor {
+        #[inline]
+        fn space(&self) -> DynamicColorSpace {
+            self.space
         }
-        let dst = self.convert(DstSpace::SPACE)?;
-        Ok(Color::from_raw(dst.raw))
-    }
 
-    /// Convert `self` into the closest linear color space, if it is not linear already
-    pub fn linearize(self) -> Self {
-        use kolor::details::{color::TransformFn, transform::ColorTransform};
-        let spc = self.space;
-        let raw = if let Some(transform) =
-            ColorTransform::new(spc.transform_function(), TransformFn::NONE)
-        {
-            transform.apply(self.raw, spc.white_point())
-        } else {
+        #[inline]
+        fn state(&self) -> DynamicState {
+            self.state
+        }
+
+        #[inline]
+        fn raw(&self) -> Vec3 {
             self.raw
-        };
-        Self {
-            raw,
-            space: spc.as_linear(),
-            state: self.state,
         }
     }
 
-    /// Converts `self` to a [`DynamicColorAlpha`] with specified [`DynamicAlphaState`] by adding an alpha component.
-    pub fn with_alpha(&self, alpha: f32, alpha_state: DynamicAlphaState) -> DynamicColorAlpha {
-        DynamicColorAlpha {
-            raw: self.raw.extend(alpha),
-            space: self.space,
-            alpha_state,
+    impl DynamicColor {
+        /// Create a new [`DynamicColor`] with specified raw color components, color space, and state.
+        pub fn new(raw: Vec3, space: DynamicColorSpace, state: DynamicState) -> Self {
+            Self { raw, space, state }
+        }
+
+        /// Convert `self` to the given color space. Must not attempt to convert to or from
+        /// a nonlinear color space while in scene-referred state.
+        pub fn convert(self, dest_space: DynamicColorSpace) -> ColorResult<Self> {
+            if self.state == DynamicState::Scene && (!self.space.is_linear() || !dest_space.is_linear())
+            {
+                return Err(DynamicConversionError::NonlinearConversionInSceneState(
+                    self.space, dest_space,
+                )
+                .into());
+            }
+            let conversion = kolor::ColorConversion::new(self.space, dest_space);
+            let raw = conversion.convert(self.raw);
+            Ok(Self {
+                raw,
+                space: dest_space,
+                state: self.state,
+            })
+        }
+
+        /// Convert `self`'s state to the given state using the given conversion function.
+        ///
+        /// `self.space` must be linear. See docs for [`Color::<Space, State>::convert_state`]
+        pub fn convert_state<F>(self, dest_state: DynamicState, conversion: F) -> ColorResult<Self>
+        where
+            F: FnOnce(Vec3) -> Vec3,
+        {
+            if !self.space.is_linear() {
+                return Err(DynamicConversionError::StateChangeInNonlinearSpace(
+                    self.space, self.state, dest_state,
+                )
+                .into());
+            }
+            Ok(Self {
+                raw: conversion(self.raw),
+                space: self.space,
+                state: dest_state,
+            })
+        }
+
+        /// Convert `self` to the specified space and downcast it to a typed [`Color`] with the space
+        /// and state specified. `self` must already be in the correct [DynamicState]
+        pub fn downcast_convert<DstSpace, DstState>(self) -> ColorResult<Color<DstSpace, DstState>>
+        where
+            DstSpace: ColorSpace,
+            DstState: State,
+        {
+            if self.state() != DstState::STATE {
+                return Err(DowncastError::MismatchedState(self.state(), DstState::STATE).into());
+            }
+            let dst = self.convert(DstSpace::SPACE)?;
+            Ok(Color::from_raw(dst.raw))
+        }
+
+        /// Convert `self` into the closest linear color space, if it is not linear already
+        pub fn linearize(self) -> Self {
+            use kolor::details::{color::TransformFn, transform::ColorTransform};
+            let spc = self.space;
+            let raw = if let Some(transform) =
+                ColorTransform::new(spc.transform_function(), TransformFn::NONE)
+            {
+                transform.apply(self.raw, spc.white_point())
+            } else {
+                self.raw
+            };
+            Self {
+                raw,
+                space: spc.as_linear(),
+                state: self.state,
+            }
+        }
+
+        /// Converts `self` to a [`DynamicColorAlpha`] with specified [`DynamicAlphaState`] by adding an alpha component.
+        pub fn with_alpha(&self, alpha: f32, alpha_state: DynamicAlphaState) -> DynamicColorAlpha {
+            DynamicColorAlpha {
+                raw: self.raw.extend(alpha),
+                space: self.space,
+                alpha_state,
+            }
+        }
+
+        pub fn from_kolor(color: kolor::Color, state: DynamicState) -> Self {
+            Self::new(color.value, color.space, state)
         }
     }
 
-    pub fn from_kolor(color: kolor::Color, state: DynamicState) -> Self {
-        Self::new(color.value, color.space, state)
+    impl From<DynamicColor> for kolor::Color {
+        fn from(color: DynamicColor) -> kolor::Color {
+            kolor::Color {
+                value: color.raw,
+                space: color.space,
+            }
+        }
+    }
+
+    impl<C: AnyColor> DynColor for C {
+        /// Attempt to convert to a typed `Color`. Returns an error if `self`'s color space and state do not match
+        /// the given types.
+        fn downcast<Spc: ColorSpace, St: State>(&self) -> ColorResult<Color<Spc, St>> {
+            if self.space() != Spc::SPACE {
+                return Err(DowncastError::MismatchedSpace(self.space(), Spc::SPACE).into());
+            }
+
+            if self.state() != St::STATE {
+                return Err(DowncastError::MismatchedState(self.state(), St::STATE).into());
+            }
+
+            Ok(Color::from_raw(self.raw()))
+        }
+
+        /// Convert to a typed `Color` without checking if the color space and state types
+        /// match this color's space and state. Use only if you are sure that this color
+        /// is in the correct format.
+        fn downcast_unchecked<Spc: ColorSpace, St: State>(&self) -> Color<Spc, St> {
+            Color::from_raw(self.raw())
+        }
     }
 }
 
 #[cfg(not(target_arch = "spirv"))]
-impl From<DynamicColor> for kolor::Color {
-    fn from(color: DynamicColor) -> kolor::Color {
-        kolor::Color {
-            value: color.raw,
-            space: color.space,
-        }
-    }
-}
-
-#[cfg(not(target_arch = "spirv"))]
-impl<C: AnyColor> DynColor for C {
-    /// Attempt to convert to a typed `Color`. Returns an error if `self`'s color space and state do not match
-    /// the given types.
-    fn downcast<Spc: ColorSpace, St: State>(&self) -> ColorResult<Color<Spc, St>> {
-        if self.space() != Spc::SPACE {
-            return Err(DowncastError::MismatchedSpace(self.space(), Spc::SPACE).into());
-        }
-
-        if self.state() != St::STATE {
-            return Err(DowncastError::MismatchedState(self.state(), St::STATE).into());
-        }
-
-        Ok(Color::from_raw(self.raw()))
-    }
-
-    /// Convert to a typed `Color` without checking if the color space and state types
-    /// match this color's space and state. Use only if you are sure that this color
-    /// is in the correct format.
-    fn downcast_unchecked<Spc: ColorSpace, St: State>(&self) -> Color<Spc, St> {
-        Color::from_raw(self.raw())
-    }
-}
-*/
+pub use dyn_col::*;

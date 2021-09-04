@@ -400,11 +400,9 @@ pub use color::{Color, ColorAlpha};
 #[cfg(not(target_arch = "spirv"))]
 pub use color::{ColorU8, ColorU8Alpha};
 
-/*
 #[cfg(not(target_arch = "spirv"))]
 #[doc(inline)]
 pub use color::{DynamicColor, DynamicColorAlpha};
-*/
 
 /// The traits which form the backbone of the strongly-typed [`Color`] & [`ColorAlpha`].
 pub mod traits;

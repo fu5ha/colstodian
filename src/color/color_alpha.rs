@@ -6,15 +6,6 @@ use crate::{
     traits::*, ColAlpha, Color, Display, EncodedSrgb, LinearSrgb, Premultiplied, Separate,
 };
 
-/*
-#[cfg(not(target_arch = "spirv"))]
-use crate::{
-    ColorResult,
-    DynamicColor,
-    error::DowncastError,
-};
-*/
-
 use glam::{const_vec4, Vec4, Vec4Swizzles};
 #[cfg(all(not(feature = "std"), feature = "libm"))]
 use num_traits::Float;
@@ -624,139 +615,148 @@ mod color_u8 {
 #[cfg(not(target_arch = "spirv"))]
 pub use color_u8::ColorU8Alpha;
 
-/*
-/// A dynamic color with an alpha channel, with its space and alpha defined
-/// as data. This is mostly useful for (de)serialization.
-///
-/// See [`ColorAlpha`], [`ColorSpace`] and [`AlphaState`] for more.
-#[derive(Copy, Clone, PartialEq, Debug)]
-#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 #[cfg(not(target_arch = "spirv"))]
-pub struct DynamicColorAlpha {
-    /// The raw tristimulus value of the color. Be careful when modifying this directly, i.e.
-    /// don't multiply two Colors' raw values unless they are in the same color space and state.
-    pub raw: Vec4,
-    pub space: DynamicColorSpace,
-    pub alpha_state: DynamicAlphaState,
-}
+mod dyn_color {
+    use super::*;
+    use crate::{
+        error::DowncastError,
+        traits::{AnyColorAlpha, DynColorAlpha},
+        DynamicColor, ColorResult, State, DynamicColorSpace, DynamicState, DynamicAlphaState,
+    };
 
-#[cfg(not(target_arch = "spirv"))]
-impl DynamicColorAlpha {
-    /// Create a new [`DynamicColorAlpha`] with specified raw color components, color space, and alpha state.
-    pub fn new(raw: Vec4, space: DynamicColorSpace, alpha_state: DynamicAlphaState) -> Self {
-        Self {
-            raw,
-            space,
-            alpha_state,
-        }
-    }
-
-    /// Converts `self` to a [`DynamicColor`] by first premultiplying `self` if it is not already
-    /// and then stripping off the alpha component.
-    pub fn into_color(self) -> DynamicColor {
-        let color_alpha = self.convert_alpha_state(DynamicAlphaState::Premultiplied);
-        DynamicColor::new(color_alpha.raw.xyz(), self.space, DynamicState::Display)
-    }
-
-    /// Converts `self` to a [`DynamicColor`] by stripping off the alpha component, without checking
-    /// whether it is premultiplied or not.
-    pub fn into_color_no_premultiply(self) -> DynamicColor {
-        DynamicColor::new(self.raw.xyz(), self.space, DynamicState::Display)
-    }
-
-    /// Converts from one color space and state to another.
+    /// A dynamic color with an alpha channel, with its space and alpha defined
+    /// as data. This is mostly useful for (de)serialization.
     ///
-    /// * If converting from [Premultiplied][DynamicAlphaState::Premultiplied] to [Separate][DynamicAlphaState::Separate], if
-    /// `self`'s alpha is 0.0, the resulting color values will not be changed.
-    pub fn convert(mut self, dst_space: DynamicColorSpace, dst_alpha: DynamicAlphaState) -> Self {
-        let conversion = kolor::ColorConversion::new(self.space, dst_space);
-
-        // linearize
-        self.raw = conversion.apply_src_transform(self.raw.xyz()).extend(1.0);
-
-        // separate
-        self = self.convert_alpha_state(DynamicAlphaState::Separate);
-
-        // linear color conversion
-        self.raw = conversion.apply_linear_part(self.raw.xyz()).extend(1.0);
-
-        // convert to dst alpha state
-        self = self.convert_alpha_state(dst_alpha);
-
-        // dst transform
-        self.raw = conversion.apply_dst_transform(self.raw.xyz()).extend(1.0);
-        self.space = dst_space;
-
-        self
+    /// See [`ColorAlpha`], [`ColorSpace`] and [`AlphaState`] for more.
+    #[derive(Copy, Clone, PartialEq, Debug)]
+    #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+    pub struct DynamicColorAlpha {
+        /// The raw tristimulus value of the color. Be careful when modifying this directly, i.e.
+        /// don't multiply two Colors' raw values unless they are in the same color space and state.
+        pub raw: Vec4,
+        pub space: DynamicColorSpace,
+        pub state: DynamicState,
+        pub alpha_state: DynamicAlphaState,
     }
 
-    /// Convert `self` to the specified space and downcast it to a typed [`ColorAlpha`] with the space
-    /// and state specified.
-    pub fn downcast_convert<DstSpace, DstAlpha>(self) -> ColorAlpha<DstSpace, DstAlpha>
-    where
-        DstSpace: ColorSpace,
-        DstAlpha: AlphaState,
-    {
-        let dst = self.convert(DstSpace::SPACE, DstAlpha::STATE);
-        ColorAlpha::from_raw(dst.raw)
-    }
-
-    /// Converts `self` to the provided `dst_alpha` [`DynamicAlphaState`].
-    ///
-    /// * If converting to the same state, this is a no-op.
-    /// * If converting from [Premultiplied][DynamicAlphaState::Premultiplied] to [Separate][DynamicAlphaState::Separate], if
-    /// `self`'s alpha is 0.0, the resulting color values will not be changed.
-    pub fn convert_alpha_state(self, dst_alpha: DynamicAlphaState) -> DynamicColorAlpha {
-        let col = match (self.alpha_state, dst_alpha) {
-            (DynamicAlphaState::Separate, DynamicAlphaState::Premultiplied) => {
-                self.raw.xyz() * self.raw.w
+    impl DynamicColorAlpha {
+        /// Create a new [`DynamicColorAlpha`] with specified raw color components, color space, and alpha state.
+        pub fn new(raw: Vec4, space: DynamicColorSpace, alpha_state: DynamicAlphaState) -> Self {
+            Self {
+                raw,
+                space,
+                alpha_state,
             }
-            (DynamicAlphaState::Premultiplied, DynamicAlphaState::Separate) => {
-                if self.raw.w != 0.0 {
-                    self.raw.xyz() / self.raw.w
-                } else {
-                    self.raw.xyz()
+        }
+
+        /// Converts `self` to a [`DynamicColor`] by first premultiplying `self` if it is not already
+        /// and then stripping off the alpha component.
+        pub fn into_color(self) -> DynamicColor {
+            let color_alpha = self.convert_alpha_state(DynamicAlphaState::Premultiplied);
+            DynamicColor::new(color_alpha.raw.xyz(), self.space, DynamicState::Display)
+        }
+
+        /// Converts `self` to a [`DynamicColor`] by stripping off the alpha component, without checking
+        /// whether it is premultiplied or not.
+        pub fn into_color_no_premultiply(self) -> DynamicColor {
+            DynamicColor::new(self.raw.xyz(), self.space, DynamicState::Display)
+        }
+
+        /// Converts from one color space and state to another.
+        ///
+        /// * If converting from [Premultiplied][DynamicAlphaState::Premultiplied] to [Separate][DynamicAlphaState::Separate], if
+        /// `self`'s alpha is 0.0, the resulting color values will not be changed.
+        pub fn convert(mut self, dst_space: DynamicColorSpace, dst_alpha: DynamicAlphaState) -> Self {
+            let conversion = kolor::ColorConversion::new(self.space, dst_space);
+
+            // linearize
+            self.raw = conversion.apply_src_transform(self.raw.xyz()).extend(1.0);
+
+            // separate
+            self = self.convert_alpha_state(DynamicAlphaState::Separate);
+
+            // linear color conversion
+            self.raw = conversion.apply_linear_part(self.raw.xyz()).extend(1.0);
+
+            // convert to dst alpha state
+            self = self.convert_alpha_state(dst_alpha);
+
+            // dst transform
+            self.raw = conversion.apply_dst_transform(self.raw.xyz()).extend(1.0);
+            self.space = dst_space;
+
+            self
+        }
+
+        /// Convert `self` to the specified space and downcast it to a typed [`ColorAlpha`] with the space
+        /// and state specified.
+        pub fn downcast_convert<DstSpace, DstSt, DstAlpha>(self) -> ColorAlpha<DstSpace, DstSt, DstAlpha>
+        where
+            DstSpace: ColorSpace,
+            DstSt: State,
+            DstAlpha: AlphaState,
+        {
+            let dst = self.convert(DstSpace::SPACE, DstAlpha::STATE);
+            ColorAlpha::from_raw(dst.raw)
+        }
+
+        /// Converts `self` to the provided `dst_alpha` [`DynamicAlphaState`].
+        ///
+        /// * If converting to the same state, this is a no-op.
+        /// * If converting from [Premultiplied][DynamicAlphaState::Premultiplied] to [Separate][DynamicAlphaState::Separate], if
+        /// `self`'s alpha is 0.0, the resulting color values will not be changed.
+        pub fn convert_alpha_state(self, dst_alpha: DynamicAlphaState) -> DynamicColorAlpha {
+            let col = match (self.alpha_state, dst_alpha) {
+                (DynamicAlphaState::Separate, DynamicAlphaState::Premultiplied) => {
+                    self.raw.xyz() * self.raw.w
                 }
+                (DynamicAlphaState::Premultiplied, DynamicAlphaState::Separate) => {
+                    if self.raw.w != 0.0 {
+                        self.raw.xyz() / self.raw.w
+                    } else {
+                        self.raw.xyz()
+                    }
+                }
+                _ => self.raw.xyz(),
+            };
+
+            Self {
+                raw: col.extend(self.raw.w),
+                space: self.space,
+                alpha_state: dst_alpha,
             }
-            _ => self.raw.xyz(),
-        };
+        }
+    }
 
-        Self {
-            raw: col.extend(self.raw.w),
-            space: self.space,
-            alpha_state: dst_alpha,
+    impl<'a> From<&'a dyn AnyColorAlpha> for DynamicColorAlpha {
+        fn from(color: &'a dyn AnyColorAlpha) -> DynamicColorAlpha {
+            color.dynamic()
+        }
+    }
+
+    impl<C: AnyColorAlpha> DynColorAlpha for C {
+        /// Attempt to convert to a typed [`ColorAlpha`]. Returns an error if `self`'s color space and alpha state do not match
+        /// the given types.
+        fn downcast<Spc: ColorSpace, A: AlphaState>(&self) -> ColorResult<ColorAlpha<Spc, A>> {
+            if self.space() != Spc::SPACE {
+                return Err(DowncastError::MismatchedSpace(self.space(), Spc::SPACE).into());
+            }
+
+            if self.alpha_state() != A::STATE {
+                return Err(DowncastError::MismatchedAlphaState(self.alpha_state(), A::STATE).into());
+            }
+
+            Ok(ColorAlpha::from_raw(self.raw()))
+        }
+
+        /// Convert to a typed `ColorAlpha` without checking if the color space and state types
+        /// match this color's space and state. Use only if you are sure that this color
+        /// is in the correct format.
+        fn downcast_unchecked<Spc: ColorSpace, A: AlphaState>(&self) -> ColorAlpha<Spc, A> {
+            ColorAlpha::from_raw(self.raw())
         }
     }
 }
 
 #[cfg(not(target_arch = "spirv"))]
-impl<'a> From<&'a dyn AnyColorAlpha> for DynamicColorAlpha {
-    fn from(color: &'a dyn AnyColorAlpha) -> DynamicColorAlpha {
-        color.dynamic()
-    }
-}
-
-#[cfg(not(target_arch = "spirv"))]
-impl<C: AnyColorAlpha> DynColorAlpha for C {
-    /// Attempt to convert to a typed [`ColorAlpha`]. Returns an error if `self`'s color space and alpha state do not match
-    /// the given types.
-    fn downcast<Spc: ColorSpace, A: AlphaState>(&self) -> ColorResult<ColorAlpha<Spc, A>> {
-        if self.space() != Spc::SPACE {
-            return Err(DowncastError::MismatchedSpace(self.space(), Spc::SPACE).into());
-        }
-
-        if self.alpha_state() != A::STATE {
-            return Err(DowncastError::MismatchedAlphaState(self.alpha_state(), A::STATE).into());
-        }
-
-        Ok(ColorAlpha::from_raw(self.raw()))
-    }
-
-    /// Convert to a typed `ColorAlpha` without checking if the color space and state types
-    /// match this color's space and state. Use only if you are sure that this color
-    /// is in the correct format.
-    fn downcast_unchecked<Spc: ColorSpace, A: AlphaState>(&self) -> ColorAlpha<Spc, A> {
-        ColorAlpha::from_raw(self.raw())
-    }
-}
-*/
+pub use dyn_color::*;

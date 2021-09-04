@@ -238,7 +238,6 @@ where
     type DstAlpha = DstAlpha;
 }
 
-/*
 /// An object-safe trait implemented by both [`Color`] and [`DynamicColor`].
 #[cfg(not(target_arch = "spirv"))]
 pub trait AnyColor {
@@ -301,4 +300,3 @@ pub trait DynColorAlpha {
     /// is in the correct format.
     fn downcast_unchecked<Spc: ColorSpace, St: State, A: AlphaState>(&self) -> ColorAlpha<Spc, St, A>;
 }
-*/
