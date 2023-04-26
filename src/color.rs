@@ -9,7 +9,7 @@ use crate::{
 };
 */
 
-use glam::{const_vec3, Vec3};
+use glam::Vec3;
 #[cfg(all(not(feature = "std"), feature = "libm"))]
 use num_traits::Float;
 #[cfg(feature = "serde")]
@@ -40,7 +40,7 @@ pub struct Color<Spc, St> {
 #[macro_export]
 macro_rules! const_color {
     ($el1:expr, $el2:expr, $el3:expr) => {
-        Color::from_raw(const_vec3!([$el1, $el2, $el3]))
+        Color::from_raw(Vec3::new([$el1, $el2, $el3]))
     };
 }
 
@@ -59,13 +59,13 @@ impl<Spc, St> AsRef<[f32; 3]> for Color<Spc, St> {
 impl<Spc, St> Color<Spc, St> {
     /// Creates a [`Color`] with the internal color elements `el1`, `el2`, `el3`.
     #[inline]
-    pub fn new(el1: f32, el2: f32, el3: f32) -> Self {
+    pub const fn new(el1: f32, el2: f32, el3: f32) -> Self {
         Self::from_raw(Vec3::new(el1, el2, el3))
     }
 
     /// Creates a [`Color`] with the internal color elements all set to `el`.
     #[inline]
-    pub fn splat(el: f32) -> Self {
+    pub const fn splat(el: f32) -> Self {
         Self::from_raw(Vec3::splat(el))
     }
 
@@ -88,8 +88,8 @@ impl<Spc, St> Color<Spc, St> {
         self.raw.min_element()
     }
 
-    pub const ZERO: Self = const_color!(0.0, 0.0, 0.0);
-    pub const ONE: Self = const_color!(1.0, 1.0, 1.0);
+    pub const ZERO: Self = Color::new(0.0, 0.0, 0.0);
+    pub const ONE: Self = Color::new(1.0, 1.0, 1.0);
 }
 
 impl<Spc: WorkingColorSpace, St> Color<Spc, St> {

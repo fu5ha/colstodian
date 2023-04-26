@@ -15,7 +15,7 @@ use crate::{
 };
 */
 
-use glam::{const_vec4, Vec4, Vec4Swizzles};
+use glam::{Vec4, Vec4Swizzles};
 #[cfg(all(not(feature = "std"), feature = "libm"))]
 use num_traits::Float;
 #[cfg(feature = "serde")]
@@ -36,7 +36,7 @@ pub struct ColorAlpha<Spc, St, A> {
 macro_rules! const_color_alpha {
     ($el1:expr, $el2:expr, $el3:expr, $alpha:expr) => {
         ColorAlpha {
-            raw: const_vec4!([$el1, $el2, $el3, $alpha]),
+            raw: Vec4::new($el1, $el2, $el3, $alpha),
             _pd: PhantomData,
         }
     };
@@ -57,13 +57,13 @@ impl<Spc, St, A> AsRef<[f32; 4]> for ColorAlpha<Spc, St, A> {
 impl<Spc, St, A> ColorAlpha<Spc, St, A> {
     /// Creates a [`ColorAlpha`] with the raw internal color elements `el1`, `el2`, `el3` and alpha value `alpha`.
     #[inline]
-    pub fn new(el1: f32, el2: f32, el3: f32, alpha: f32) -> Self {
+    pub const fn new(el1: f32, el2: f32, el3: f32, alpha: f32) -> Self {
         Self::from_raw(Vec4::new(el1, el2, el3, alpha))
     }
 
     /// Creates a [`ColorAlpha`] with the internal color elements all set to `el`.
     #[inline]
-    pub fn splat(el: f32) -> Self {
+    pub const fn splat(el: f32) -> Self {
         Self::from_raw(Vec4::splat(el))
     }
 
