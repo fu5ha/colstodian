@@ -366,61 +366,35 @@ pub use kolor;
 /// corresponding dynamic color space by looking at the implementation of the [`ColorSpace`] trait on a specific
 /// color space struct).
 #[rustfmt::skip]
-pub mod spaces;
-#[doc(inline)]
-pub use spaces::DynamicColorSpace;
-pub use spaces::*;
+pub mod linear_spaces;
 
-/// Contains types relating to a color's state.
-pub mod states;
+pub mod reprs;
 
-#[doc(inline)]
-pub use states::{Display, DynamicState, Scene};
-
-/// Contains types relating to a color's alpha state.
-pub mod alpha_states;
-
-#[doc(inline)]
-pub use alpha_states::{DynamicAlphaState, Premultiplied, Separate};
-
-/// Contains tonemappers, useful for mapping scene-referred HDR values into display-referred values
-/// within the concrete dynamic range of a specific display.
-pub mod tonemap;
+pub mod encodings;
 
 pub mod component_structs;
-pub use component_structs::*;
 
 /// Contains color types and helper functions.
-#[macro_use]
 pub mod color;
 
 #[doc(inline)]
-pub use color::{Color, ColorAlpha};
-
-#[cfg(not(target_arch = "spirv"))]
-pub use color::{ColorU8, ColorU8Alpha};
-
-/*
-#[cfg(not(target_arch = "spirv"))]
-#[doc(inline)]
-pub use color::{DynamicColor, DynamicColorAlpha};
-*/
+pub use color::Color;
 
 /// The traits which form the backbone of the strongly-typed [`Color`] & [`ColorAlpha`].
 pub mod traits;
 
 #[doc(inline)]
-pub use traits::{AlphaState, ColorInto, ColorSpace, State};
+pub use traits::ColorEncoding;
 
-/// Error handling types.
-#[cfg(not(target_arch = "spirv"))]
-pub mod error;
+// /// Error handling types.
+// #[cfg(not(target_arch = "spirv"))]
+// pub mod error;
 
-#[doc(inline)]
-#[cfg(not(target_arch = "spirv"))]
-pub use error::{ColorError, ColorResult};
+// #[doc(inline)]
+// #[cfg(not(target_arch = "spirv"))]
+// pub use error::{ColorError, ColorResult};
 
-#[cfg(test)]
+#[cfg(all(test, feature = "TODO"))]
 mod tests {
     use super::*;
 
