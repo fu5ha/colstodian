@@ -33,15 +33,10 @@ fn f32_to_u8(x: f32) -> u8 {
 pub struct SrgbU8;
 
 impl Color<SrgbU8> {
+    /// If you have no idea wtf is a color management and you have 3 u8s, use this.
     /// TODO: unify docs
     #[inline(always)]
     pub const fn srgb_u8(r: u8, g: u8, b: u8) -> Self {
-        Color::from_repr([r, g, b])
-    }
-
-    /// If you have no idea wtf is a color management and you have 3 u8s, use this.
-    #[inline(always)]
-    pub const fn rgb_u8(r: u8, g: u8, b: u8) -> Self {
         Color::from_repr([r, g, b])
     }
 }
@@ -89,6 +84,7 @@ impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbU8 {}
 pub struct SrgbF32;
 
 impl Color<SrgbF32> {
+    /// If you have no idea wtf a color management is and have 3 floats, use this.
     #[inline(always)]
     pub const fn srgb_f32(r: f32, g: f32, b: f32) -> Self {
         Color::from_repr(Vec3::new(r, g, b))
@@ -130,14 +126,9 @@ impl ColorEncoding for SrgbF32 {
 pub struct SrgbAU8;
 
 impl Color<SrgbAU8> {
-    #[inline(always)]
-    pub const fn srgba_u8(r: u8, g: u8, b: u8, a: u8) -> Self {
-        Self::from_repr([r, g, b, a])
-    }
-
     /// If you have no idea wtf is a color management and you have 4 u8s, use this.
     #[inline(always)]
-    pub const fn rgba_u8(r: u8, g: u8, b: u8, a: u8) -> Self {
+    pub const fn srgba_u8(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self::from_repr([r, g, b, a])
     }
 }
@@ -178,6 +169,7 @@ impl ColorEncoding for SrgbAU8 {
 pub struct SrgbAF32;
 
 impl Color<SrgbAF32> {
+    /// If you have no idea wtf a color management is and have 4 floats, use this.
     #[inline(always)]
     pub const fn srgba_f32(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color::from_repr(Vec4::new(r, g, b, a))

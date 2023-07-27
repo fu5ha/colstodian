@@ -18,26 +18,43 @@
 //! ways, and the end result of what those components mean is very different.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Types representing different [`LinearColorSpace`][traits::LinearColorSpace]s.
-#[rustfmt::skip]
-pub mod linear_spaces;
+/// Contains advanced usage details of the crate.
+pub mod details {
+    pub mod component_structs;
 
-/// The underlying data representations ([`ColorRepr`][traits::ColorRepr]s) used by different [`ColorEncoding`].
-pub mod reprs;
+    /// Types representing different [`ColorEncoding`][traits::ColorEncoding]s.
+    pub mod encodings;
 
-/// Types representing different [`ColorEncoding`]s.
-pub mod encodings;
+    /// Contains the [`Color`][color::Color] type and helper functions.
+    pub mod color;
 
-pub mod component_structs;
+    /// Types representing different [`LinearColorSpace`][traits::LinearColorSpace]s.
+    #[rustfmt::skip]
+    pub mod linear_spaces;
 
-/// Contains the [`Color`] type and helper functions.
-pub mod color;
+    /// The traits which form the backbone of this crate.
+    pub mod traits;
+
+    /// The underlying data representations ([`ColorRepr`][traits::ColorRepr]s) used by different [`ColorEncoding`][traits::ColorEncoding]s.
+    pub mod reprs;
+}
+
+pub(crate) use details::*;
+
+/// Contains a basic set of [`ColorEncoding`]s to get most people going.
+/// 
+/// These are all re-exported from inside the [`details::encodings`]
+pub mod basic_encodings {
+    pub use crate::details::encodings::SrgbU8;
+    pub use crate::details::encodings::SrgbF32;
+    pub use crate::details::encodings::SrgbAU8;
+    pub use crate::details::encodings::SrgbAF32;
+    pub use crate::details::encodings::LinearSrgb;
+    pub use crate::details::encodings::LinearSrgbA;
+}
 
 #[doc(inline)]
 pub use color::Color;
-
-/// The traits which form the backbone of the strongly-typed [`Color`].
-pub mod traits;
 
 #[doc(inline)]
 pub use traits::ColorEncoding;
