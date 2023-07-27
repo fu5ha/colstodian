@@ -1,14 +1,14 @@
-use crate::Color;
-use crate::traits::*;
-use crate::reprs::*;
 use crate::component_structs::*;
 use crate::linear_spaces;
+use crate::reprs::*;
+use crate::traits::*;
+use crate::Color;
 
 use glam::Vec3;
 use glam::Vec4;
 use glam::Vec4Swizzles;
-use kolor::details::transform;
 use kolor::details::color::WhitePoint;
+use kolor::details::transform;
 
 #[inline(always)]
 fn u8_to_f32(x: u8) -> f32 {
@@ -21,13 +21,13 @@ fn f32_to_u8(x: f32) -> u8 {
 }
 
 /// The fully-encoded form of the sRGB color encoding standard.
-/// 
+///
 /// This is one of the most common color encodings. If you have three u8 values (0-255)
 /// or a hex code with 6 digits, this is almost certainly the encoding those values are encoded in.
-/// 
+///
 /// If you have four u8 values (0-255) or a hex code with 8 digits, you likely have
 /// a color in the [`SrgbAU8`] encoding instead.
-/// 
+///
 /// This color encoding is defined as the strict sRGB color encoding standard, with
 /// OETF applied and encoded into 8 bits per component.
 pub struct SrgbU8;
@@ -61,7 +61,11 @@ impl ColorEncoding for SrgbU8 {
     #[inline]
     fn dst_transform_raw(raw: glam::Vec3, _: f32) -> Self::Repr {
         let electro = transform::sRGB_oetf(raw, WhitePoint::D65);
-        let repr = [f32_to_u8(electro.x), f32_to_u8(electro.y), f32_to_u8(electro.z)];
+        let repr = [
+            f32_to_u8(electro.x),
+            f32_to_u8(electro.y),
+            f32_to_u8(electro.z),
+        ];
         repr
     }
 }
@@ -75,7 +79,7 @@ impl ConvertFrom<LinearSrgbA> for SrgbU8 {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbU8 {}
 
 /// The non-linear sRGB color encoding in 32 bit per component floats.
-/// 
+///
 /// This is a moderately common way to specify color values.
 /// If you have floating point values from 0.0 to 1.0 which are directly analogous to
 /// the 0-255 form (i.e. `(0.5, 0.5, 0.5)` should be the same as `(127, 127, 127)`), then this
@@ -122,13 +126,13 @@ impl ConvertFrom<LinearSrgbA> for SrgbF32 {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbF32 {}
 
 /// The fully-encoded form of the sRGB color encoding standard, with separate alpha component.
-/// 
+///
 /// This is one of the most common color encodings. If you have four u8 values (0-255)
 /// or a hex code with 8 digits, this is almost certainly the encoding those values are encoded in.
-/// 
+///
 /// If you have three u8 values (0-255) or a hex code with 6 digits, you likely have
 /// a color in the [`SrgbU8`] encoding instead.
-/// 
+///
 /// This color encoding is defined as the strict sRGB color encoding standard, with
 /// OETF applied and encoded into 8 bits per component.
 pub struct SrgbAU8;
@@ -162,7 +166,12 @@ impl ColorEncoding for SrgbAU8 {
     #[inline]
     fn dst_transform_raw(raw: glam::Vec3, alpha: f32) -> Self::Repr {
         let electro = transform::sRGB_oetf(raw, WhitePoint::D65);
-        let repr = [f32_to_u8(electro.x), f32_to_u8(electro.y), f32_to_u8(electro.z), f32_to_u8(alpha)];
+        let repr = [
+            f32_to_u8(electro.x),
+            f32_to_u8(electro.y),
+            f32_to_u8(electro.z),
+            f32_to_u8(alpha),
+        ];
         repr
     }
 }
@@ -176,7 +185,7 @@ impl ConvertFrom<LinearSrgbA> for SrgbAU8 {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbAU8 {}
 
 /// The non-linear sRGB color encoding in 32 bit per component floats with separate alpha.
-/// 
+///
 /// This is a moderately common way to specify color values.
 /// If you have four floating point values from 0.0 to 1.0 which are directly analogous to
 /// the 0-255 form (i.e. `(0.5, 0.5, 0.5, 0.5)` should be the same as `(127, 127, 127, 127)`), then this
@@ -223,13 +232,13 @@ impl ConvertFrom<LinearSrgbA> for SrgbAF32 {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbAF32 {}
 
 /// The fully-encoded form of the sRGB color encoding standard, with *premultiplied* alpha component.
-/// 
+///
 /// Premultiplied means that the color components are already multiplied by the alpha component. Such multiplication
 /// happens *before* the sRGB OETF is applied.
-/// 
+///
 /// This is not a common way for humans to specify colors directly, but is a moderately common way to encode
 /// textures before uploading them to the GPU or otherwise using them in a rendering pipeline.
-/// 
+///
 /// This color encoding is defined as the strict sRGB color encoding standard, with
 /// OETF applied and encoded into 8 bits per component. The alpha component is linearly encoded
 /// into 8 bits, i.e. the sRGB OETF is not applied.
@@ -258,7 +267,12 @@ impl ColorEncoding for SrgbAU8Premultiplied {
     fn dst_transform_raw(raw: glam::Vec3, alpha: f32) -> Self::Repr {
         let premultiplied = raw * alpha;
         let electro = transform::sRGB_oetf(premultiplied, WhitePoint::D65);
-        let repr = [f32_to_u8(electro.x), f32_to_u8(electro.y), f32_to_u8(electro.z), f32_to_u8(alpha)];
+        let repr = [
+            f32_to_u8(electro.x),
+            f32_to_u8(electro.y),
+            f32_to_u8(electro.z),
+            f32_to_u8(alpha),
+        ];
         repr
     }
 }
@@ -272,7 +286,7 @@ impl ConvertFrom<LinearSrgbA> for SrgbAU8Premultiplied {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbAU8Premultiplied {}
 
 /// The linear form of the sRGB color encoding standard.
-/// 
+///
 /// This is a moderately common way to specify color values.
 /// If you have three f32s which are *not* directly related to the u8 form, or you otherwise know should be
 /// "linear rgb" values, then this is the encoding you have. If you instead have four values with an alpha
@@ -319,7 +333,7 @@ impl ConvertFrom<LinearSrgbAPremultiplied> for LinearSrgb {}
 impl WorkingEncoding for LinearSrgb {}
 
 /// The linear form of the sRGB color encoding standard with a separate alpha component.
-/// 
+///
 /// This is a moderately common way to specify color values.
 /// If you have four f32s which are *not* directly related to the u8 form, or you otherwise know should be
 /// "linear rgb" values, and the alpha component varies independently of the color componewnts,
@@ -366,7 +380,7 @@ impl ConvertFrom<LinearSrgbAPremultiplied> for LinearSrgbA {}
 impl WorkingEncoding for LinearSrgbA {}
 
 /// The linear form of the sRGB color encoding standard with a *premultiplied* alpha component.
-/// 
+///
 /// This is a moderately common way to specify color values.
 /// If you have four f32s which are *not* directly related to the u8 form, or you otherwise know should be
 /// "linear rgb" values, and the alpha component varies independently of the color componewnts,

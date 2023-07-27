@@ -17,6 +17,9 @@
 //! A bag of components that describes "a color" could actually be interpreted in many different
 //! ways, and the end result of what those components mean is very different.
 #![cfg_attr(not(feature = "std"), no_std)]
+#![allow(
+    clippy::let_and_return, // it makes conversion code more explicit with naming
+)]
 
 /// Contains advanced usage details of the crate.
 pub mod details {
@@ -42,15 +45,15 @@ pub mod details {
 pub(crate) use details::*;
 
 /// Contains a basic set of [`ColorEncoding`]s to get most people going.
-/// 
+///
 /// These are all re-exported from inside the [`details::encodings`]
 pub mod basic_encodings {
-    pub use crate::details::encodings::SrgbU8;
-    pub use crate::details::encodings::SrgbF32;
-    pub use crate::details::encodings::SrgbAU8;
-    pub use crate::details::encodings::SrgbAF32;
     pub use crate::details::encodings::LinearSrgb;
     pub use crate::details::encodings::LinearSrgbA;
+    pub use crate::details::encodings::SrgbAF32;
+    pub use crate::details::encodings::SrgbAU8;
+    pub use crate::details::encodings::SrgbF32;
+    pub use crate::details::encodings::SrgbU8;
 }
 
 #[doc(inline)]
@@ -65,8 +68,8 @@ pub use traits::ColorInto;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use reprs::*;
     use encodings::*;
+    use reprs::*;
     use traits::*;
 
     trait EqualsEps<T> {
@@ -101,7 +104,7 @@ mod tests {
                 && self[3].eq_eps(other[3], eps)
         }
     }
-    
+
     impl EqualsEps<f32> for F32Repr {
         fn eq_eps(self, other: F32Repr, eps: f32) -> bool {
             self[0].eq_eps(other[0], eps)
@@ -118,7 +121,7 @@ mod tests {
                 && self[3].eq_eps(other[3], eps)
         }
     }
-    
+
     impl<E: ColorEncoding> EqualsEps<<E::Repr as ColorRepr>::Element> for Color<E>
     where
         E::Repr: EqualsEps<<E::Repr as ColorRepr>::Element>,

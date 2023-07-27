@@ -38,24 +38,24 @@ pub struct Rgb<T> {
 unsafe impl ComponentStructFor<U8Repr> for Rgb<u8> {
     fn cast(repr: &U8Repr) -> &Self {
         // SAFETY: [u8; 3] is guaranteed to have the same layout as Self
-        unsafe { &*(repr as *const U8Repr as *const Self ) }
+        unsafe { &*(repr as *const U8Repr as *const Self) }
     }
 
     fn cast_mut(repr: &mut U8Repr) -> &mut Self {
         // SAFETY: [u8; 3] is guaranteed to have the same layout as Self
-        unsafe { &mut *(repr as *mut U8Repr as *mut Self ) }
+        unsafe { &mut *(repr as *mut U8Repr as *mut Self) }
     }
 }
 
 unsafe impl ComponentStructFor<F32Repr> for Rgb<f32> {
     fn cast(repr: &F32Repr) -> &Self {
         // SAFETY: Vec3 is guaranteed to have the same layout as Self
-        unsafe { &*(repr as *const F32Repr as *const Self ) }
+        unsafe { &*(repr as *const F32Repr as *const Self) }
     }
 
     fn cast_mut(repr: &mut F32Repr) -> &mut Self {
         // SAFETY: Vec3 is guaranteed to have the same layout as Self
-        unsafe { &mut *(repr as *mut F32Repr as *mut Self ) }
+        unsafe { &mut *(repr as *mut F32Repr as *mut Self) }
     }
 }
 
@@ -79,24 +79,24 @@ pub struct RgbA<T> {
 unsafe impl ComponentStructFor<U8ARepr> for RgbA<u8> {
     fn cast(repr: &U8ARepr) -> &Self {
         // SAFETY: [u8; 4] is guaranteed to have the same layout as Self
-        unsafe { &*(repr as *const U8ARepr as *const Self ) }
+        unsafe { &*(repr as *const U8ARepr as *const Self) }
     }
 
     fn cast_mut(repr: &mut U8ARepr) -> &mut Self {
         // SAFETY: [u8; 4] is guaranteed to have the same layout as Self
-        unsafe { &mut *(repr as *mut U8ARepr as *mut Self ) }
+        unsafe { &mut *(repr as *mut U8ARepr as *mut Self) }
     }
 }
 
 unsafe impl ComponentStructFor<F32ARepr> for RgbA<f32> {
     fn cast(repr: &F32ARepr) -> &Self {
         // SAFETY: Vec4 is guaranteed to have the same layout as Self
-        unsafe { &*(repr as *const F32ARepr as *const Self ) }
+        unsafe { &*(repr as *const F32ARepr as *const Self) }
     }
 
     fn cast_mut(repr: &mut F32ARepr) -> &mut Self {
         // SAFETY: Vec4 is guaranteed to have the same layout as Self
-        unsafe { &mut *(repr as *mut F32ARepr as *mut Self ) }
+        unsafe { &mut *(repr as *mut F32ARepr as *mut Self) }
     }
 }
 

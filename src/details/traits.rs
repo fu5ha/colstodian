@@ -15,7 +15,7 @@ pub trait ColorEncoding: Sized + 'static {
 
     /// Used in `Debug` and `Default` implementations.
     const NAME: &'static str;
-    
+
     /// Convert from `Self::Repr` to a `glam::Vec3` in the `Self::LinearSpace` color space and a separate
     /// (not pre-multiplied) alpha component. If this encoding does not have alpha, return 1.0.
     fn src_transform_raw(repr: Self::Repr) -> (Vec3, f32);
@@ -26,7 +26,14 @@ pub trait ColorEncoding: Sized + 'static {
 }
 
 /// Implementing this trait for a struct marks that it is safe to pointer cast `Repr` as `Self`.
-pub unsafe trait ComponentStructFor<Repr: ColorRepr>: Sized + Clone + Copy + 'static {
+///
+/// # Safety
+///
+/// In order to implement this trait, it must be safe to perform the casts implied by the `cast` and
+/// `cast_mut` functions.
+pub unsafe trait ComponentStructFor<Repr: ColorRepr>:
+    Sized + Clone + Copy + 'static
+{
     fn cast(repr: &Repr) -> &Self;
     fn cast_mut(repr: &mut Repr) -> &mut Self;
 }
@@ -48,7 +55,7 @@ pub trait Saturate: ColorEncoding {
 }
 
 /// Implemented by color encodings which can blend from one color to another based on a blending factor.
-/// 
+///
 /// It is expected that this blending function should be implemented as similar to a linear interpolation,
 /// and should be fairly cheap.
 pub trait Blend: ColorEncoding {
@@ -61,7 +68,7 @@ pub trait WorkingEncoding: ColorEncoding {}
 
 /// A type that implements [`LinearColorSpace`] represents a color space which can be defined by a *linear transformation only*
 /// (i.e. a 3x3 matrix multiplication) from the CIE XYZ color space.
-/// 
+///
 /// A linear color space is defined by the combination of a set of [Primaries][RGBPrimaries] and a [White Point][WhitePoint].
 pub trait LinearColorSpace {
     const PRIMARIES: RGBPrimaries;
@@ -80,7 +87,7 @@ where
     /// before it undergoes its source transform. This may be desirable to perform some form of
     /// gamut mapping if the src encoding has a larger size of representable colors than te dst encoding.
     #[inline(always)]
-    fn map_src(_src: &mut SrcEnc::Repr) { }
+    fn map_src(_src: &mut SrcEnc::Repr) {}
 }
 
 /// Performs the raw conversion from the [`LinearColorSpace`] represented by `SrcSpc` to

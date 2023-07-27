@@ -8,8 +8,6 @@ use crate::{
 };
 */
 
-#[cfg(all(not(feature = "std"), feature = "libm"))]
-use num_traits::Float;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -67,16 +65,18 @@ impl<SrcEnc: ColorEncoding> Color<SrcEnc> {
         let (mut raw, alpha) = SrcEnc::src_transform_raw(self.repr);
 
         // linear part
-        <DstEnc::LinearSpace as LinearConvertFromRaw<SrcEnc::LinearSpace>>::linear_part_raw(&mut raw);
+        <DstEnc::LinearSpace as LinearConvertFromRaw<SrcEnc::LinearSpace>>::linear_part_raw(
+            &mut raw,
+        );
 
         // dst transform
         let dst_repr = DstEnc::dst_transform_raw(raw, alpha);
 
         Color::from_repr(dst_repr)
     }
-    
+
     /// Interprets this color as `DstEnc`. Requires that `DstEnc`'s `ColorEncoding::Repr` is the same as `self`'s.
-    /// 
+    ///
     /// Using this method assumes you have done an external computation/conversion such that this cast is valid.
     #[inline(always)]
     pub fn cast<DstEnc: ColorEncoding<Repr = SrcEnc::Repr>>(self) -> Color<DstEnc> {
@@ -130,12 +130,7 @@ where
     E::ComponentStruct: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Color<{}>({})",
-            E::NAME,
-            <Self as Deref>::deref(self)
-        )
+        write!(f, "Color<{}>({})", E::NAME, <Self as Deref>::deref(self))
     }
 }
 
@@ -161,12 +156,7 @@ where
     E::ComponentStruct: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Color<{}>({})",
-            E::NAME,
-            <Self as Deref>::deref(self)
-        )
+        write!(f, "Color<{}>({})", E::NAME, <Self as Deref>::deref(self))
     }
 }
 
