@@ -8,7 +8,6 @@ use crate::{
 };
 */
 
-use glam::Vec3;
 #[cfg(all(not(feature = "std"), feature = "libm"))]
 use num_traits::Float;
 #[cfg(feature = "serde")]
@@ -25,13 +24,6 @@ use core::ops::*;
 pub struct Color<E: ColorEncoding> {
     /// The raw values of the color. Be careful when modifying this directly.
     pub repr: E::Repr,
-}
-
-#[macro_export]
-macro_rules! const_color {
-    ($el1:expr, $el2:expr, $el3:expr) => {
-        Color::from_raw(const_vec3!([$el1, $el2, $el3]))
-    };
 }
 
 // impl<Spc, St> From<[f32; 3]> for Color<Spc, St> {
@@ -65,14 +57,26 @@ impl<SrcEnc: ColorEncoding> Color<SrcEnc> {
     /// Converts `self` from one color encoding to another.
     pub fn convert<DstEnc>(self) -> Color<DstEnc>
     where
-        DstEnc: ColorEncoding,
-        DstEnc::LinearSpace: ConvertFromRaw<SrcEnc::LinearSpace>,
+        DstEnc: ColorEncoding + ConvertFrom<SrcEnc>,
+        DstEnc::LinearSpace: LinearConvertFromRaw<SrcEnc::LinearSpace>,
     {
-        let (mut raw, alpha) = SrcEnc::src_transform_raw(self.repr);
-        <DstEnc::LinearSpace as ConvertFromRaw<SrcEnc::LinearSpace>>::linear_part_raw(&mut raw);
-        Color::from_repr(DstEnc::dst_transform_raw(raw, alpha))
-    }
+        let mut repr = self.repr;
 
+        // src conversion map
+        <DstEnc as ConvertFrom<SrcEnc>>::map_src(&mut repr);
+
+        // src transform
+        let (mut raw, alpha) = SrcEnc::src_transform_raw(self.repr);
+
+        // linear part
+        <DstEnc::LinearSpace as LinearConvertFromRaw<SrcEnc::LinearSpace>>::linear_part_raw(&mut raw);
+
+        // dst transform
+        let dst_repr = DstEnc::dst_transform_raw(raw, alpha);
+
+        Color::from_repr(dst_repr)
+    }
+    
     /// Interprets this color as `DstEnc`. Requires that `DstEnc`'s `ColorEncoding::Repr` is the same as `self`'s.
     /// 
     /// Using this method assumes you have done an external computation/conversion such that this cast is valid.
@@ -124,7 +128,7 @@ unsafe impl<E: ColorEncoding> bytemuck::Pod for Color<E> {}
 #[cfg(not(target_arch = "spirv"))]
 impl<E> fmt::Display for Color<E>
 where
-    E: ColorEncoding + fmt::Display,
+    E: ColorEncoding,
     E::ComponentStruct: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -155,7 +159,7 @@ impl<E: ColorEncoding> DerefMut for Color<E> {
 #[cfg(not(target_arch = "spirv"))]
 impl<E> fmt::Debug for Color<E>
 where
-    E: ColorEncoding + fmt::Display,
+    E: ColorEncoding,
     E::ComponentStruct: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

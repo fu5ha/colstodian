@@ -1,8 +1,4 @@
-use crate::{
-    Color,
-    component_structs::*,
-    traits::*,
-};
+use crate::traits::*;
 
 use glam::Vec3;
 
@@ -10,13 +6,13 @@ use kolor::details::color::*;
 
 macro_rules! impl_conversion {
     ($space:ident to $dst_space:ident => None) => {
-        impl ConvertFromRaw<$space> for $dst_space {
+        impl LinearConvertFromRaw<$space> for $dst_space {
             #[inline(always)]
-            fn linear_part_raw(color: &mut Vec3) {}
+            fn linear_part_raw(_: &mut Vec3) {}
         }
     };
     ($space:ident to $dst_space:ident => $mat:ident) => {
-        impl ConvertFromRaw<$space> for $dst_space {
+        impl LinearConvertFromRaw<$space> for $dst_space {
             #[inline(always)]
             fn linear_part_raw(color: &mut Vec3) {
                 *color = kolor::details::generated_matrices::$mat * *color;

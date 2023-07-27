@@ -1,11 +1,9 @@
-use core::ops::{Deref, DerefMut};
-
 use crate::Color;
 
 use glam::Vec3;
 use kolor::details::color::{RGBPrimaries, WhitePoint};
 
-pub trait ColorEncoding: 'static {
+pub trait ColorEncoding: Sized + 'static {
     /// The raw data representation used by this encoding.
     type Repr: ColorRepr;
 
@@ -70,24 +68,40 @@ pub trait LinearColorSpace {
     const WHITE_POINT: WhitePoint;
 }
 
+/// A trait that marks `Self` as being a color encoding which is able to be directly converted from `SrcEnc`,
+/// as well as allowing some hooks to perform extra mapping during the conversion if necessary.
+pub trait ConvertFrom<SrcEnc>
+where
+    SrcEnc: ColorEncoding,
+    Self: ColorEncoding,
+    Self::LinearSpace: LinearConvertFromRaw<SrcEnc::LinearSpace>,
+{
+    /// If required or desired, perform a mapping of some kind to the input
+    /// before it undergoes its source transform. This may be desirable to perform some form of
+    /// gamut mapping if the src encoding has a larger size of representable colors than te dst encoding.
+    #[inline(always)]
+    fn map_src(_src: &mut SrcEnc::Repr) { }
+}
+
 /// Performs the raw conversion from the [`LinearColorSpace`] represented by `SrcSpc` to
 /// the [`LinearColorSpace`] represented by `Self`.
-pub trait ConvertFromRaw<SrcSpace: LinearColorSpace>: LinearColorSpace {
-    fn linear_part_raw(color: &mut Vec3);
+pub trait LinearConvertFromRaw<SrcSpace: LinearColorSpace>: LinearColorSpace {
+    fn linear_part_raw(raw: &mut Vec3);
 }
 
-/// The complement of [`ConvertFromRaw`].
-///
-/// This is automatically implemented for all types that implement [`ConvertFromRaw`],
-/// much like how the [From] and [Into] traits work, where [From] gets you [Into] for free.
-pub trait ConvertToRaw<DstSpace: LinearColorSpace>: LinearColorSpace {
-    fn linear_part_raw(color: &mut Vec3);
+pub trait ColorInto<DstCol> {
+    fn color_into(self) -> DstCol;
 }
 
-impl<SrcSpace: LinearColorSpace, DstSpace: ConvertFromRaw<SrcSpace>> ConvertToRaw<DstSpace> for SrcSpace {
+impl<SrcEnc, DstEnc> ColorInto<Color<DstEnc>> for Color<SrcEnc>
+where
+    SrcEnc: ColorEncoding,
+    DstEnc: ColorEncoding + ConvertFrom<SrcEnc>,
+    DstEnc::LinearSpace: LinearConvertFromRaw<SrcEnc::LinearSpace>,
+{
     #[inline(always)]
-    fn linear_part_raw(color: &mut Vec3) {
-        <DstSpace as ConvertFromRaw<SrcSpace>>::linear_part_raw(color);
+    fn color_into(self) -> Color<DstEnc> {
+        self.convert()
     }
 }
 
