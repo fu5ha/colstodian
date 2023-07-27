@@ -1,11 +1,13 @@
 # `colstodian`
 
-[![crates.io](http://meritbadge.herokuapp.com/colstodian)](https://crates.io/crates/colstodian)
+[![crates.io](https://img.shields.io/crates/v/colstodian.svg)](https://crates.io/crates/colstodian)
 [![docs.rs](https://docs.rs/colstodian/badge.svg)](https://docs.rs/colstodian)
+[![ci](https://github.com/fu5ha/colstodian/actions/workflows/ci.yaml/badge.svg)](https://github.com/fu5ha/colstodian/actions)
 
 ## Introduction
 
 `colstodian` is a practical, opinionated color management library for games and graphics.
+
 For more information, see [the latest docs](https://termhn.github.io/colstodian/colstodian/) built
 from git `main`.
 
