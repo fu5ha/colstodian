@@ -69,6 +69,7 @@ pub use traits::ColorInto;
 mod tests {
     use super::*;
     use encodings::*;
+    use glam::Vec3;
     use reprs::*;
     use traits::*;
 
@@ -201,5 +202,28 @@ mod tests {
 
         test_fn(Color::srgb_u8(107, 174, 130));
         test_fn(Color::srgb_f32(0.41961, 0.68235, 0.5098));
+    }
+
+    #[test]
+    fn working_space_math() {
+        let col = Color::linear_srgb(1.0, 1.0, 1.0);
+
+        let mut col = col * 0.5;
+        assert_eq_eps!(col, Color::linear_srgb(0.5, 0.5, 0.5), 0.00001);
+
+        col *= Vec3::new(0.5, 2.0, 0.2);
+        assert_eq_eps!(col, Color::linear_srgb(0.25, 1.0, 0.1), 0.00001);
+
+        let mut col2 = Color::linear_srgb(1.0, 1.0, 1.0) + col;
+        assert_eq_eps!(col2, Color::linear_srgb(1.25, 2.0, 1.1), 0.00001);
+
+        col2 -= Color::linear_srgb(0.25, 1.0, 0.1);
+        assert_eq_eps!(col2, Color::linear_srgb(1.0, 1.0, 1.0), 0.00001);
+
+        col2 /= Vec3::new(2.0, 2.0, 2.0);
+        assert_eq_eps!(col2, Color::linear_srgb(0.5, 0.5, 0.5), 0.00001);
+
+        col2 = col2 / 0.1;
+        assert_eq_eps!(col2, Color::linear_srgb(5.0, 5.0, 5.0), 0.00001);
     }
 }

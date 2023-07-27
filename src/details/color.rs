@@ -8,6 +8,8 @@ use crate::{
 };
 */
 
+use glam::Vec3;
+use glam::Vec4;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -38,14 +40,6 @@ impl<E: ColorEncoding> Color<E> {
     #[inline(always)]
     pub const fn from_repr(repr: E::Repr) -> Self {
         Self { repr }
-    }
-}
-
-impl<E: ColorEncoding + Saturate> Color<E> {
-    /// Clamp the raw element values of `self` in the range [0..1]
-    #[inline]
-    pub fn saturate(self) -> Self {
-        Self::from_repr(<E as Saturate>::saturate(self.repr))
     }
 }
 
@@ -84,6 +78,14 @@ impl<SrcEnc: ColorEncoding> Color<SrcEnc> {
     }
 }
 
+impl<E: ColorEncoding + Saturate> Color<E> {
+    /// Clamp the raw element values of `self` within the current color encoding's valid range of values.
+    #[inline]
+    pub fn saturate(self) -> Self {
+        Self::from_repr(<E as Saturate>::saturate(self.repr))
+    }
+}
+
 impl<E> Color<E>
 where
     E: ColorEncoding + Blend,
@@ -116,12 +118,27 @@ where
     }
 }
 
+// SAFETY: Color is transparent with the underlying repr
 #[cfg(feature = "bytemuck")]
-unsafe impl<E: ColorEncoding> bytemuck::Zeroable for Color<E> {}
+unsafe impl<E> bytemuck::Zeroable for Color<E>
+where
+    E: ColorEncoding,
+    E::Repr: bytemuck::Zeroable,
+{
+}
+
+// SAFETY: Color is transparent with the underlying repr
+#[cfg(feature = "bytemuck")]
+unsafe impl<E> bytemuck::Pod for Color<E>
+where
+    E: ColorEncoding,
+    E::Repr: bytemuck::Pod,
+{
+}
+
+// SAFETY: Color is transparent with the underlying repr
 #[cfg(feature = "bytemuck")]
 unsafe impl<E: ColorEncoding> bytemuck::TransparentWrapper<E::Repr> for Color<E> {}
-#[cfg(feature = "bytemuck")]
-unsafe impl<E: ColorEncoding> bytemuck::Pod for Color<E> {}
 
 #[cfg(not(target_arch = "spirv"))]
 impl<E> fmt::Display for Color<E>
@@ -160,73 +177,217 @@ where
     }
 }
 
-// macro_rules! impl_op_color {
-//     ($op:ident, $op_func:ident) => {
-//         impl<Spc: LinearColorSpace, St> $op for Color<Spc, St> {
-//             type Output = Color<Spc, St>;
-//             fn $op_func(self, rhs: Color<Spc, St>) -> Self::Output {
-//                 Color::from_raw(self.raw.$op_func(rhs.raw))
-//             }
-//         }
+// --------- MATH OP IMPLS -----------
+//
+// For working encodings, we want to be able to multiply or divide by
+// a unitless quantity of the same shape as the underlying representation
+// or element type as a scaling factor.
+//
+// `col * Repr`
+// `col * Repr::Element`
+// `Repr * col`
+// `Repr::Element * col`
+// `col *= Repr`
+// `col *= Repr::Element`
+//
+// `col / Repr`
+// `col / Repr::Element`
+// `Repr / col`
+// `Repr::Element / col`
+// `col /= Repr`
+// `col /= Repr::Element`
+//
+// We don't want to be able to multiply or divide a color by another color
+// of the same encoding because then we'd just end up with a unitless ratio.
+// If someone wants such a quantity, they can access the underlying data and
+// do componentwise division themselves, but the fact such an operation is not
+// implemented directly on the color type may give pause that the operation is often
+// nonsensical.
+//
+// we also want to be able to add and subtract colors with the same encoding directly
+//
+// `col + col`
+// `col += col`
+//
+// `col - col`
+// `col - col`
 
-//         impl<Spc: LinearColorSpace, St> $op<Vec3> for Color<Spc, St> {
-//             type Output = Color<Spc, St>;
-//             fn $op_func(self, rhs: Vec3) -> Self::Output {
-//                 Color::from_raw(self.raw.$op_func(rhs))
-//             }
-//         }
-//     };
-// }
+impl<Rhs, E> Mul<Rhs> for Color<E>
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Mul<Rhs, Output = E::Repr>,
+{
+    type Output = Self;
+    #[inline(always)]
+    fn mul(self, rhs: Rhs) -> Self::Output {
+        Self {
+            repr: self.repr.mul(rhs),
+        }
+    }
+}
 
-// macro_rules! impl_binop_color {
-//     ($op:ident, $op_func:ident) => {
-//         impl<Spc: LinearColorSpace, St> $op for Color<Spc, St> {
-//             fn $op_func(&mut self, rhs: Color<Spc, St>) {
-//                 self.raw.$op_func(rhs.raw);
-//             }
-//         }
+impl<Rhs, E> MulAssign<Rhs> for Color<E>
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: MulAssign<Rhs>,
+{
+    #[inline(always)]
+    fn mul_assign(&mut self, rhs: Rhs) {
+        self.repr.mul_assign(rhs)
+    }
+}
 
-//         impl<Spc: LinearColorSpace, St> $op<Vec3> for Color<Spc, St> {
-//             fn $op_func(&mut self, rhs: Vec3) {
-//                 self.raw.$op_func(rhs);
-//             }
-//         }
-//     };
-// }
+impl<E> Mul<Color<E>> for f32
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Mul<f32, Output = E::Repr>,
+{
+    type Output = Color<E>;
+    #[inline(always)]
+    fn mul(self, mut rhs: Color<E>) -> Self::Output {
+        rhs.repr = rhs.repr.mul(self);
+        rhs
+    }
+}
 
-// impl<E> Div<E::Element> for Color<E>
-// where
-//     E: ColorEncoding + WorkingEncoding,
-//     E::Repr: Div<E::Element>,
-// {
-//     type Output = Self;
-//     #[inline]
-//     fn div(self, rhs: <E::Repr as ColorRepr>::Element) -> Self::Output {
-//         Color {
-//             repr: self.repr.div(rhs),
-//         }
-//     }
-// }
-// impl<E> Div<Color<E>> for E::Element
-// where
-//     E: ColorEncoding + WorkingEncoding,
-//     E::Repr: Div<E::Element>,
-// {
-//     type Output = Color<E>;
-//     #[inline]
-//     fn div(self, rhs: Color<E>) -> Self::Output {
-//         Color {
-//             repr: rhs.repr.div(self)
-//         }
-//     }
-// }
+impl<E> Mul<Color<E>> for Vec3
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Mul<Vec3, Output = E::Repr>,
+{
+    type Output = Color<E>;
+    #[inline(always)]
+    fn mul(self, mut rhs: Color<E>) -> Self::Output {
+        rhs.repr = rhs.repr.mul(self);
+        rhs
+    }
+}
 
-// impl_op_color!(Add, add);
-// impl_op_color!(Sub, sub);
-// impl_op_color!(Mul, mul);
-// impl_op_color!(Div, div);
+impl<E> Mul<Color<E>> for Vec4
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Mul<Vec4, Output = E::Repr>,
+{
+    type Output = Color<E>;
+    #[inline(always)]
+    fn mul(self, mut rhs: Color<E>) -> Self::Output {
+        rhs.repr = rhs.repr.mul(self);
+        rhs
+    }
+}
 
-// impl_binop_color!(AddAssign, add_assign);
-// impl_binop_color!(SubAssign, sub_assign);
-// impl_binop_color!(MulAssign, mul_assign);
-// impl_binop_color!(DivAssign, div_assign);
+impl<Rhs, E> Div<Rhs> for Color<E>
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Div<Rhs, Output = E::Repr>,
+{
+    type Output = Self;
+    #[inline(always)]
+    fn div(self, rhs: Rhs) -> Self::Output {
+        Self {
+            repr: self.repr.div(rhs),
+        }
+    }
+}
+
+impl<Rhs, E> DivAssign<Rhs> for Color<E>
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: DivAssign<Rhs>,
+{
+    #[inline(always)]
+    fn div_assign(&mut self, rhs: Rhs) {
+        self.repr.div_assign(rhs)
+    }
+}
+
+impl<E> Div<Color<E>> for f32
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Div<f32, Output = E::Repr>,
+{
+    type Output = Color<E>;
+    #[inline(always)]
+    fn div(self, mut rhs: Color<E>) -> Self::Output {
+        rhs.repr = rhs.repr.div(self);
+        rhs
+    }
+}
+
+impl<E> Div<Color<E>> for Vec3
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Div<Vec3, Output = E::Repr>,
+{
+    type Output = Color<E>;
+    #[inline(always)]
+    fn div(self, mut rhs: Color<E>) -> Self::Output {
+        rhs.repr = rhs.repr.div(self);
+        rhs
+    }
+}
+
+impl<E> Div<Color<E>> for Vec4
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Div<Vec4, Output = E::Repr>,
+{
+    type Output = Color<E>;
+    #[inline(always)]
+    fn div(self, mut rhs: Color<E>) -> Self::Output {
+        rhs.repr = rhs.repr.div(self);
+        rhs
+    }
+}
+
+impl<E> Add for Color<E>
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Add<Output = E::Repr>,
+{
+    type Output = Self;
+    #[inline(always)]
+    fn add(self, rhs: Color<E>) -> Self::Output {
+        Self {
+            repr: self.repr.add(rhs.repr),
+        }
+    }
+}
+
+impl<E> AddAssign for Color<E>
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: AddAssign,
+{
+    #[inline(always)]
+    fn add_assign(&mut self, rhs: Self) {
+        self.repr.add_assign(rhs.repr)
+    }
+}
+
+impl<E> Sub for Color<E>
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Sub<Output = E::Repr>,
+{
+    type Output = Self;
+    #[inline(always)]
+    fn sub(self, rhs: Color<E>) -> Self::Output {
+        Self {
+            repr: self.repr.sub(rhs.repr),
+        }
+    }
+}
+
+impl<E> SubAssign for Color<E>
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: SubAssign,
+{
+    #[inline(always)]
+    fn sub_assign(&mut self, rhs: Self) {
+        self.repr.sub_assign(rhs.repr)
+    }
+}
+
+// --------- END MATH OP IMPLS -----------
