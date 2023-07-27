@@ -468,13 +468,6 @@ impl AlphaOver for LinearSrgbAPremultiplied {
 }
 
 /// The Oklab perceptual color space.
-///
-/// This is a moderately common way to specify color values.
-/// If you have three f32s which are *not* directly related to the u8 form, or you otherwise know should be
-/// "linear rgb" values, then this is the encoding you have. If you instead have four values with an alpha
-/// component where the alpha component varies independently of the color components, you have [`LinearSrgbA`] values.
-/// If you have four values with an alpha component and the rgb components are modified directly when the alpha component
-/// changes as well, you have [`LinearSrgbAPremultiplied`] values.
 pub struct Oklab;
 
 impl Color<Oklab> {
