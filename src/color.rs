@@ -16,9 +16,7 @@ use serde::{Deserialize, Serialize};
 use core::fmt;
 use core::ops::*;
 
-/// A strongly typed color, parameterized by a color space and state.
-///
-/// See crate-level docs as well as [`ColorSpace`] and [`State`] for more.
+/// A strongly typed color, parameterized by a [`ColorEncoding`]
 #[repr(transparent)]
 #[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
 pub struct Color<E: ColorEncoding> {

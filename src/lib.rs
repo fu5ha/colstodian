@@ -22,14 +22,12 @@
 #[rustfmt::skip]
 pub mod linear_spaces;
 
-/// The underlying data representations ([`ColorRepr`][traits::ColorRepr]s) used by different [`ColorEncodings`].
+/// The underlying data representations ([`ColorRepr`][traits::ColorRepr]s) used by different [`ColorEncoding`].
 pub mod reprs;
 
 /// Types representing different [`ColorEncoding`]s.
 pub mod encodings;
 
-/// The "bags of components" used by different color encodings, used to be able to access named components
-/// via dot-syntax through `Deref`.
 pub mod component_structs;
 
 /// Contains the [`Color`] type and helper functions.

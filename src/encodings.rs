@@ -252,9 +252,9 @@ impl ColorEncoding for SrgbAU8Premultiplied {
 /// This is a moderately common way to specify color values.
 /// If you have three f32s which are *not* directly related to the u8 form, or you otherwise know should be
 /// "linear rgb" values, then this is the encoding you have. If you instead have four values with an alpha
-/// component where the alpha component varies independently of the color components, you have [`LinearSrgbAF32`] values.
+/// component where the alpha component varies independently of the color components, you have [`LinearSrgbA`] values.
 /// If you have four values with an alpha component and the rgb components are modified directly when the alpha component
-/// changes as well, you have [`LinearSrgbAF32Premultiplied`] values.
+/// changes as well, you have [`LinearSrgbAPremultiplied`] values.
 pub struct LinearSrgb;
 
 impl Color<LinearSrgb> {
@@ -297,9 +297,9 @@ impl ConvertFrom<LinearSrgbAPremultiplied> for LinearSrgb {}
 /// This is a moderately common way to specify color values.
 /// If you have four f32s which are *not* directly related to the u8 form, or you otherwise know should be
 /// "linear rgb" values, and the alpha component varies independently of the color componewnts,
-/// then this is the encoding you have. If you instead have three values, you have [`LinearSrgbF32`] values.
+/// then this is the encoding you have. If you instead have three values, you have [`LinearSrgb`] values.
 /// If you have four values with an alpha component and the rgb components are modified directly when the alpha component
-/// changes as well, you have [`LinearSrgbAF32Premultiplied`] values.
+/// changes as well, you have [`LinearSrgbAPremultiplied`] values.
 pub struct LinearSrgbA;
 
 impl Color<LinearSrgbA> {
@@ -342,9 +342,9 @@ impl ConvertFrom<LinearSrgbAPremultiplied> for LinearSrgbA {}
 /// This is a moderately common way to specify color values.
 /// If you have four f32s which are *not* directly related to the u8 form, or you otherwise know should be
 /// "linear rgb" values, and the alpha component varies independently of the color componewnts,
-/// then this is the encoding you have. If you instead have three values, you have [`LinearSrgbF32`] values.
+/// then this is the encoding you have. If you instead have three values, you have [`LinearSrgb`] values.
 /// If you have four values with an alpha component and the rgb components are modified directly when the alpha component
-/// changes as well, you have [`LinearSrgbAF32Premultiplied`] values.
+/// changes as well, you have [`LinearSrgbAPremultiplied`] values.
 pub struct LinearSrgbAPremultiplied;
 
 impl Color<LinearSrgbAPremultiplied> {

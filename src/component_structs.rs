@@ -1,8 +1,8 @@
-//! Structs that act as bags of named components which [`Color`][super::Color]s of different color spaces
-//! may be `Deref`erenced to in order to gain more appropriate dot syntax for that color space.
+//! Structs that act as bags of named components which [`Color`][crate::Color]s of different color encodings
+//! may be `Deref`erenced to in order to gain more appropriate dot syntax for that encoding.
 //!
-//! For example, a [`Color`][super::Color] in the [`ICtCpPQ`][super::ICtCpPQ] color space can be `Deref`'d to [`ICtCp`], allowing you
-//! to do things like `color.i` or `color.ct`.
+//! For example, a [`Color`][crate::Color] in the [`SrgbU8`][crate::encodings::SrgbU8] color space can be `Deref`'d to [`Rgb`], allowing you
+//! to do things like `color.r` or `color.g`.
 
 use core::fmt;
 
@@ -25,7 +25,7 @@ use crate::traits::ComponentStructFor;
 // #[cfg(feature = "bytemuck")]
 // impl_bytemuck!(Rgb, ICtCp, Xyz, Lab, LCh);
 
-/// A bag of components with names R, G, B. Some `Color`s with RGB color spaces
+/// A bag of components with names R, G, B. Some `Color`s with RGB color encodings
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq)]
@@ -65,7 +65,7 @@ impl<T: fmt::Display> fmt::Display for Rgb<T> {
         write!(f, "R: {}, G: {}, B: {}", self.r, self.g, self.b)
     }
 }
-/// A bag of components with names R, G, B, A. Some `Color`s with RGBA color spaces
+/// A bag of components with names R, G, B, A. Some `Color`s with RGBA color encodings
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq)]

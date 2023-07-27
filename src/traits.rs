@@ -62,7 +62,7 @@ pub trait WorkingEncoding: ColorEncoding {}
 /// A type that implements [`LinearColorSpace`] represents a color space which can be defined by a *linear transformation only*
 /// (i.e. a 3x3 matrix multiplication) from the CIE XYZ color space.
 /// 
-/// A linear color space is defined by the combination of a set of [Primaries][RGBPriamries] and a [White Point][WhitePoint].
+/// A linear color space is defined by the combination of a set of [Primaries][RGBPrimaries] and a [White Point][WhitePoint].
 pub trait LinearColorSpace {
     const PRIMARIES: RGBPrimaries;
     const WHITE_POINT: WhitePoint;
