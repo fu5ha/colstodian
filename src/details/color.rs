@@ -11,7 +11,7 @@ use crate::{
 use glam::Vec3;
 use glam::Vec4;
 #[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use core::fmt;
 use core::ops::*;
@@ -21,7 +21,10 @@ use core::ops::*;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "serde",
-    serde(bound(serialize = "E::Repr: Serialize", deserialize = "E::Repr: DeserializeOwned"))
+    serde(bound(
+        serialize = "E::Repr: Serialize",
+        deserialize = "E::Repr: DeserializeOwned"
+    ))
 )]
 pub struct Color<E: ColorEncoding> {
     /// The raw values of the color. Be careful when modifying this directly.
