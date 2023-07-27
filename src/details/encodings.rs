@@ -504,6 +504,7 @@ impl ConvertFrom<SrgbF32> for Oklab {}
 impl ConvertFrom<SrgbAU8> for Oklab {}
 impl ConvertFrom<SrgbAF32> for Oklab {}
 impl ConvertFrom<SrgbAU8Premultiplied> for Oklab {}
+impl ConvertFrom<LinearSrgb> for Oklab {}
 impl ConvertFrom<LinearSrgbA> for Oklab {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for Oklab {}
 
