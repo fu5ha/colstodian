@@ -18,10 +18,20 @@ use core::ops::*;
 
 /// A strongly typed color, parameterized by a [`ColorEncoding`]
 #[repr(transparent)]
-#[cfg_attr(feature = "with-serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", serde(bound(serialize = "E::Repr: Serialize", deserialize = "E::Repr: Deserialize")))]
 pub struct Color<E: ColorEncoding> {
     /// The raw values of the color. Be careful when modifying this directly.
     pub repr: E::Repr,
+}
+
+impl<E: ColorEncoding> Copy for Color<E> {}
+
+impl<E: ColorEncoding> Clone for Color<E> {
+    #[inline(always)]
+    fn clone(&self) -> Color<E> {
+        *self
+    }
 }
 
 // impl<Spc, St> From<[f32; 3]> for Color<Spc, St> {
@@ -88,22 +98,44 @@ impl<E: ColorEncoding + Saturate> Color<E> {
 
 impl<E> Color<E>
 where
-    E: ColorEncoding + Blend,
+    E: ColorEncoding + AlphaOver,
 {
-    /// Blend `self`'s color values with the color values from `other` with linear interpolation. If `factor` is > 1.0,
-    /// results may not be sensical.
-    #[inline]
-    pub fn blend(self, other: Color<E>, factor: f32) -> Color<E> {
-        Color::from_repr(<E as Blend>::blend(self.repr, other.repr, factor))
+    /// Alpha-composite `self` over `under`.
+    #[inline(always)]
+    pub fn alpha_over(self, under: Self) -> Color<E> {
+        <E as AlphaOver>::composite(self, under)
     }
 }
 
-impl<E: ColorEncoding> Copy for Color<E> {}
+impl<E> Color<E>
+where
+    E: ColorEncoding + PerceptualEncoding + LinearInterpolate,
+    E::Repr: Add<Output = E::Repr> + Sub<Output = E::Repr> + Mul<f32, Output = E::Repr>,
+{
+    /// Blend `self`'s color values with the color values from `other` with perceptually-linear interpolation.
+    /// 
+    /// `factor` ranges from `[0..=1.0]`. If `factor` is > `1.0`, results may not be sensical.
+    #[inline]
+    pub fn perceptual_blend(self, other: Color<E>, factor: f32) -> Color<E> {
+        self.lerp(other, factor)
+    }
+}
 
-impl<E: ColorEncoding> Clone for Color<E> {
-    #[inline(always)]
-    fn clone(&self) -> Color<E> {
-        *self
+impl<E> Color<E>
+where
+    E: ColorEncoding + LinearInterpolate,
+    E::Repr: Add<Output = E::Repr> + Sub<Output = E::Repr> + Mul<f32, Output = E::Repr>,
+{
+    /// Linearly interpolate from `self`'s value to `other`'s value. Not guaranteed to be perceptually
+    /// linear or pleasing!
+    /// 
+    /// If you want a better way to blend colors in a perceptually pleasing way, see [`Color::perceptual_blend`],
+    /// which requires that the color encoding is a [`PerceptualEncoding`].
+    /// 
+    /// `factor` ranges from `[0..=1.0]`. If `factor` is > `1.0`, results may not be sensical.
+    #[inline]
+    pub fn lerp(self, other: Self, factor: f32) -> Self {
+        <E as LinearInterpolate>::lerp(self, other, factor)
     }
 }
 

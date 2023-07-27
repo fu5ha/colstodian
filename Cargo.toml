@@ -10,7 +10,7 @@ homepage = "https://github.com/fu5ha/colstodian"
 repository = "https://github.com/fu5ha/colstodian"
 
 [package.metadata.docs.rs]
-features = ["std", "with-serde", "with-bytemuck"]
+features = ["std", "serde", "bytemuck"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/state/manifest.html
 
@@ -24,7 +24,7 @@ num-traits = { version = "0.2", optional = true, default-features = false }
 serde = { version = "1", optional = true, features = ["derive"] }
 
 [features]
-default = ["std", "with-bytemuck"]
+default = ["std", "bytemuck"]
 
 # enable support for the standard library
 std = ["kolor/std", "glam/std"]
@@ -33,6 +33,6 @@ std = ["kolor/std", "glam/std"]
 libm = ["kolor/libm", "glam/libm", "num-traits", "num-traits/libm"]
 
 # add serde Serialize/Deserialize to relevant types
-with-serde = ["serde", "kolor/serde1", "glam/serde"]
+serde = ["dep:serde", "kolor/serde1", "glam/serde"]
 
-with-bytemuck = ["bytemuck", "glam/bytemuck"]
+bytemuck = ["dep:bytemuck", "glam/bytemuck"]

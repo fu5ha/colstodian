@@ -77,6 +77,8 @@ impl ConvertFrom<SrgbAU8Premultiplied> for SrgbU8 {}
 impl ConvertFrom<LinearSrgb> for SrgbU8 {}
 impl ConvertFrom<LinearSrgbA> for SrgbU8 {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbU8 {}
+// TODO: oklab gamut clipping
+impl ConvertFrom<Oklab> for SrgbU8 {}
 
 /// The non-linear sRGB color encoding in 32 bit per component floats.
 ///
@@ -124,6 +126,8 @@ impl ConvertFrom<SrgbAU8Premultiplied> for SrgbF32 {}
 impl ConvertFrom<LinearSrgb> for SrgbF32 {}
 impl ConvertFrom<LinearSrgbA> for SrgbF32 {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbF32 {}
+// TODO: oklab gamut clipping
+impl ConvertFrom<Oklab> for SrgbF32 {}
 
 /// The fully-encoded form of the sRGB color encoding standard, with separate alpha component.
 ///
@@ -183,6 +187,8 @@ impl ConvertFrom<SrgbAU8Premultiplied> for SrgbAU8 {}
 impl ConvertFrom<LinearSrgb> for SrgbAU8 {}
 impl ConvertFrom<LinearSrgbA> for SrgbAU8 {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbAU8 {}
+// TODO: oklab gamut clipping
+impl ConvertFrom<Oklab> for SrgbAU8 {}
 
 /// The non-linear sRGB color encoding in 32 bit per component floats with separate alpha.
 ///
@@ -230,6 +236,8 @@ impl ConvertFrom<SrgbAU8Premultiplied> for SrgbAF32 {}
 impl ConvertFrom<LinearSrgb> for SrgbAF32 {}
 impl ConvertFrom<LinearSrgbA> for SrgbAF32 {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbAF32 {}
+// TODO: oklab gamut clipping
+impl ConvertFrom<Oklab> for SrgbAF32 {}
 
 /// The fully-encoded form of the sRGB color encoding standard, with *premultiplied* alpha component.
 ///
@@ -284,6 +292,17 @@ impl ConvertFrom<SrgbAU8> for SrgbAU8Premultiplied {}
 impl ConvertFrom<LinearSrgb> for SrgbAU8Premultiplied {}
 impl ConvertFrom<LinearSrgbA> for SrgbAU8Premultiplied {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbAU8Premultiplied {}
+// TODO: oklab gamut clipping
+impl ConvertFrom<Oklab> for SrgbAU8Premultiplied {}
+
+impl AlphaOver for SrgbAU8Premultiplied {
+    fn composite(over: Color<Self>, under: Color<Self>) -> Color<Self> {
+       let over = over.convert::<LinearSrgbAPremultiplied>();
+        let under = under.convert::<LinearSrgbAPremultiplied>();
+        let comp = over.alpha_over(under);
+        comp.convert::<Self>()
+    }
+}
 
 /// The linear form of the sRGB color encoding standard.
 ///
@@ -329,6 +348,8 @@ impl ConvertFrom<SrgbAF32> for LinearSrgb {}
 impl ConvertFrom<SrgbAU8Premultiplied> for LinearSrgb {}
 impl ConvertFrom<LinearSrgbA> for LinearSrgb {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for LinearSrgb {}
+// TODO: oklab gamut clipping
+impl ConvertFrom<Oklab> for LinearSrgb {}
 
 impl WorkingEncoding for LinearSrgb {}
 
@@ -376,8 +397,19 @@ impl ConvertFrom<SrgbAF32> for LinearSrgbA {}
 impl ConvertFrom<SrgbAU8Premultiplied> for LinearSrgbA {}
 impl ConvertFrom<LinearSrgb> for LinearSrgbA {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for LinearSrgbA {}
+// TODO: oklab gamut clipping
+impl ConvertFrom<Oklab> for LinearSrgbA {}
 
 impl WorkingEncoding for LinearSrgbA {}
+
+impl AlphaOver for LinearSrgbA {
+    fn composite(over: Color<Self>, under: Color<Self>) -> Color<Self> {
+       let over = over.convert::<LinearSrgbAPremultiplied>();
+        let under = under.convert::<LinearSrgbAPremultiplied>();
+        let comp = over.alpha_over(under);
+        comp.convert::<Self>()
+    }
+}
 
 /// The linear form of the sRGB color encoding standard with a *premultiplied* alpha component.
 ///
@@ -425,11 +457,63 @@ impl ConvertFrom<SrgbAF32> for LinearSrgbAPremultiplied {}
 impl ConvertFrom<SrgbAU8Premultiplied> for LinearSrgbAPremultiplied {}
 impl ConvertFrom<LinearSrgbA> for LinearSrgbAPremultiplied {}
 impl ConvertFrom<LinearSrgb> for LinearSrgbAPremultiplied {}
+// TODO: oklab gamut clipping
+impl ConvertFrom<Oklab> for LinearSrgbAPremultiplied {}
 
-impl WorkingEncoding for LinearSrgbAPremultiplied {}
-
-impl AlphaComposite for LinearSrgbAPremultiplied {
-    fn composite(over: Self::Repr, under: Self::Repr) -> Self::Repr {
-        over + under * (1.0 - over.w)
+impl AlphaOver for LinearSrgbAPremultiplied {
+    #[inline]
+    fn composite(over: Color<Self>, under: Color<Self>) -> Color<Self> {
+        Color::from_repr(over.repr + under.repr * (1.0 - over.repr.w))
     }
 }
+
+/// The Oklab perceptual color space.
+///
+/// This is a moderately common way to specify color values.
+/// If you have three f32s which are *not* directly related to the u8 form, or you otherwise know should be
+/// "linear rgb" values, then this is the encoding you have. If you instead have four values with an alpha
+/// component where the alpha component varies independently of the color components, you have [`LinearSrgbA`] values.
+/// If you have four values with an alpha component and the rgb components are modified directly when the alpha component
+/// changes as well, you have [`LinearSrgbAPremultiplied`] values.
+pub struct Oklab;
+
+impl Color<Oklab> {
+    #[inline(always)]
+    pub fn oklab(l: f32, a: f32, b: f32) -> Self {
+        Color::from_repr(Vec3::new(l, a, b))
+    }
+}
+
+impl ColorEncoding for Oklab {
+    type Repr = F32Repr;
+
+    type ComponentStruct = Lab<f32>;
+
+    type LinearSpace = linear_spaces::CieXYZ;
+
+    const NAME: &'static str = "Oklab";
+
+    #[inline(always)]
+    fn src_transform_raw(repr: Self::Repr) -> (glam::Vec3, f32) {
+        let xyz = transform::Oklab_to_XYZ(repr, WhitePoint::D65);
+        (xyz, 1.0)
+    }
+
+    #[inline(always)]
+    fn dst_transform_raw(raw: glam::Vec3, _: f32) -> Self::Repr {
+        let oklab = transform::XYZ_to_Oklab(raw, WhitePoint::D65);
+        oklab
+    }
+}
+
+impl ConvertFrom<SrgbU8> for Oklab {}
+impl ConvertFrom<SrgbF32> for Oklab {}
+impl ConvertFrom<SrgbAU8> for Oklab {}
+impl ConvertFrom<SrgbAF32> for Oklab {}
+impl ConvertFrom<SrgbAU8Premultiplied> for Oklab {}
+impl ConvertFrom<LinearSrgbA> for Oklab {}
+impl ConvertFrom<LinearSrgbAPremultiplied> for Oklab {}
+
+impl WorkingEncoding for Oklab {}
+impl PerceptualEncoding for Oklab {}
+

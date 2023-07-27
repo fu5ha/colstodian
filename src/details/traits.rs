@@ -1,3 +1,5 @@
+use core::ops::{Add, Sub, Mul};
+
 use crate::Color;
 
 use glam::Vec3;
@@ -45,8 +47,8 @@ pub trait ColorRepr: Sized + Clone + Copy + 'static {
 }
 
 /// Implemented by color encodings that can do alpha compositing
-pub trait AlphaComposite: ColorEncoding {
-    fn composite(over: Self::Repr, under: Self::Repr) -> Self::Repr;
+pub trait AlphaOver: ColorEncoding {
+    fn composite(over: Color<Self>, under: Color<Self>) -> Color<Self>;
 }
 
 /// Implemented by color encodings that can perform saturate-style clamping.
@@ -54,13 +56,29 @@ pub trait Saturate: ColorEncoding {
     fn saturate(repr: Self::Repr) -> Self::Repr;
 }
 
-/// Implemented by color encodings which can blend from one color to another based on a blending factor.
-///
-/// It is expected that this blending function should be implemented as similar to a linear interpolation,
-/// and should be fairly cheap.
-pub trait Blend: ColorEncoding {
-    fn blend(from: Self::Repr, to: Self::Repr, factor: f32) -> Self::Repr;
+/// Implemented by color encodings which can perform linear interpolation between colors.
+/// The interpolation is not necessarily perceptually-linear, it is just linear within the
+/// given encoding.
+pub trait LinearInterpolate
+where
+    Self: ColorEncoding + WorkingEncoding,
+{
+    fn lerp(from: Color<Self>, to: Color<Self>, factor: f32) -> Color<Self>;
 }
+
+impl<E> LinearInterpolate for E
+where
+    E: ColorEncoding + WorkingEncoding,
+    E::Repr: Add<Output = E::Repr> + Sub<Output = E::Repr> + Mul<f32, Output = E::Repr>,
+{
+    #[inline]
+    fn lerp(from: Color<Self>, to: Color<Self>, factor: f32) -> Color<Self> {
+        Color { repr: from.repr + ((to.repr - from.repr) * factor) }
+    }
+}
+
+/// Implemented by color encodings which are designed to be perceptually-linear.
+pub trait PerceptualEncoding: ColorEncoding + WorkingEncoding { }
 
 /// Marks a type as representing a color encoding in which it makes sense to be able to perform mathematical
 /// operations on the contained color values directly.

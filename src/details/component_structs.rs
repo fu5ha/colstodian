@@ -106,3 +106,44 @@ impl<T: fmt::Display> fmt::Display for RgbA<T> {
         write!(f, "R: {}, G: {}, B: {}", self.r, self.g, self.b)
     }
 }
+
+/// A bag of components with names L, A, B. Some `Color`s with Lab color encodings
+/// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
+#[repr(C)]
+#[derive(Clone, Copy, PartialEq)]
+pub struct Lab<T> {
+    pub l: T,
+    pub a: T,
+    pub b: T,
+}
+
+unsafe impl ComponentStructFor<U8Repr> for Lab<u8> {
+    fn cast(repr: &U8Repr) -> &Self {
+        // SAFETY: [u8; 3] is guaranteed to have the same layout as Self
+        unsafe { &*(repr as *const U8Repr as *const Self) }
+    }
+
+    fn cast_mut(repr: &mut U8Repr) -> &mut Self {
+        // SAFETY: [u8; 3] is guaranteed to have the same layout as Self
+        unsafe { &mut *(repr as *mut U8Repr as *mut Self) }
+    }
+}
+
+unsafe impl ComponentStructFor<F32Repr> for Lab<f32> {
+    fn cast(repr: &F32Repr) -> &Self {
+        // SAFETY: Vec3 is guaranteed to have the same layout as Self
+        unsafe { &*(repr as *const F32Repr as *const Self) }
+    }
+
+    fn cast_mut(repr: &mut F32Repr) -> &mut Self {
+        // SAFETY: Vec3 is guaranteed to have the same layout as Self
+        unsafe { &mut *(repr as *mut F32Repr as *mut Self) }
+    }
+}
+
+#[cfg(not(target_arch = "spirv"))]
+impl<T: fmt::Display> fmt::Display for Lab<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "L: {}, a: {}, b: {}", self.l, self.a, self.b)
+    }
+}
