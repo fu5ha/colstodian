@@ -113,6 +113,14 @@ impl ColorEncoding for SrgbF32 {
     }
 }
 
+impl ConvertFrom<SrgbU8> for SrgbF32 {}
+impl ConvertFrom<SrgbAU8> for SrgbF32 {}
+impl ConvertFrom<SrgbAF32> for SrgbF32 {}
+impl ConvertFrom<SrgbAU8Premultiplied> for SrgbF32 {}
+impl ConvertFrom<LinearSrgb> for SrgbF32 {}
+impl ConvertFrom<LinearSrgbA> for SrgbF32 {}
+impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbF32 {}
+
 /// The fully-encoded form of the sRGB color encoding standard, with separate alpha component.
 /// 
 /// This is one of the most common color encodings. If you have four u8 values (0-255)
@@ -159,6 +167,14 @@ impl ColorEncoding for SrgbAU8 {
     }
 }
 
+impl ConvertFrom<SrgbU8> for SrgbAU8 {}
+impl ConvertFrom<SrgbF32> for SrgbAU8 {}
+impl ConvertFrom<SrgbAF32> for SrgbAU8 {}
+impl ConvertFrom<SrgbAU8Premultiplied> for SrgbAU8 {}
+impl ConvertFrom<LinearSrgb> for SrgbAU8 {}
+impl ConvertFrom<LinearSrgbA> for SrgbAU8 {}
+impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbAU8 {}
+
 /// The non-linear sRGB color encoding in 32 bit per component floats with separate alpha.
 /// 
 /// This is a moderately common way to specify color values.
@@ -197,6 +213,14 @@ impl ColorEncoding for SrgbAF32 {
         electro.extend(alpha)
     }
 }
+
+impl ConvertFrom<SrgbU8> for SrgbAF32 {}
+impl ConvertFrom<SrgbAU8> for SrgbAF32 {}
+impl ConvertFrom<SrgbF32> for SrgbAF32 {}
+impl ConvertFrom<SrgbAU8Premultiplied> for SrgbAF32 {}
+impl ConvertFrom<LinearSrgb> for SrgbAF32 {}
+impl ConvertFrom<LinearSrgbA> for SrgbAF32 {}
+impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbAF32 {}
 
 /// The fully-encoded form of the sRGB color encoding standard, with *premultiplied* alpha component.
 /// 
@@ -238,6 +262,14 @@ impl ColorEncoding for SrgbAU8Premultiplied {
         repr
     }
 }
+
+impl ConvertFrom<SrgbU8> for SrgbAU8Premultiplied {}
+impl ConvertFrom<SrgbF32> for SrgbAU8Premultiplied {}
+impl ConvertFrom<SrgbAF32> for SrgbAU8Premultiplied {}
+impl ConvertFrom<SrgbAU8> for SrgbAU8Premultiplied {}
+impl ConvertFrom<LinearSrgb> for SrgbAU8Premultiplied {}
+impl ConvertFrom<LinearSrgbA> for SrgbAU8Premultiplied {}
+impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbAU8Premultiplied {}
 
 /// The linear form of the sRGB color encoding standard.
 /// 
@@ -284,6 +316,8 @@ impl ConvertFrom<SrgbAU8Premultiplied> for LinearSrgb {}
 impl ConvertFrom<LinearSrgbA> for LinearSrgb {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for LinearSrgb {}
 
+impl WorkingEncoding for LinearSrgb {}
+
 /// The linear form of the sRGB color encoding standard with a separate alpha component.
 /// 
 /// This is a moderately common way to specify color values.
@@ -328,6 +362,8 @@ impl ConvertFrom<SrgbAF32> for LinearSrgbA {}
 impl ConvertFrom<SrgbAU8Premultiplied> for LinearSrgbA {}
 impl ConvertFrom<LinearSrgb> for LinearSrgbA {}
 impl ConvertFrom<LinearSrgbAPremultiplied> for LinearSrgbA {}
+
+impl WorkingEncoding for LinearSrgbA {}
 
 /// The linear form of the sRGB color encoding standard with a *premultiplied* alpha component.
 /// 
