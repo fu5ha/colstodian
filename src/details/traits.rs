@@ -1,4 +1,4 @@
-use core::ops::{Add, Sub, Mul};
+use core::ops::{Add, Mul, Sub};
 
 use crate::Color;
 
@@ -73,12 +73,14 @@ where
 {
     #[inline]
     fn lerp(from: Color<Self>, to: Color<Self>, factor: f32) -> Color<Self> {
-        Color { repr: from.repr + ((to.repr - from.repr) * factor) }
+        Color {
+            repr: from.repr + ((to.repr - from.repr) * factor),
+        }
     }
 }
 
 /// Implemented by color encodings which are designed to be perceptually-linear.
-pub trait PerceptualEncoding: ColorEncoding + WorkingEncoding { }
+pub trait PerceptualEncoding: ColorEncoding + WorkingEncoding {}
 
 /// Marks a type as representing a color encoding in which it makes sense to be able to perform mathematical
 /// operations on the contained color values directly.

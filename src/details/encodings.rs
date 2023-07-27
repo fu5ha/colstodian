@@ -297,7 +297,7 @@ impl ConvertFrom<Oklab> for SrgbAU8Premultiplied {}
 
 impl AlphaOver for SrgbAU8Premultiplied {
     fn composite(over: Color<Self>, under: Color<Self>) -> Color<Self> {
-       let over = over.convert::<LinearSrgbAPremultiplied>();
+        let over = over.convert::<LinearSrgbAPremultiplied>();
         let under = under.convert::<LinearSrgbAPremultiplied>();
         let comp = over.alpha_over(under);
         comp.convert::<Self>()
@@ -404,7 +404,7 @@ impl WorkingEncoding for LinearSrgbA {}
 
 impl AlphaOver for LinearSrgbA {
     fn composite(over: Color<Self>, under: Color<Self>) -> Color<Self> {
-       let over = over.convert::<LinearSrgbAPremultiplied>();
+        let over = over.convert::<LinearSrgbAPremultiplied>();
         let under = under.convert::<LinearSrgbAPremultiplied>();
         let comp = over.alpha_over(under);
         comp.convert::<Self>()
@@ -516,4 +516,3 @@ impl ConvertFrom<LinearSrgbAPremultiplied> for Oklab {}
 
 impl WorkingEncoding for Oklab {}
 impl PerceptualEncoding for Oklab {}
-

@@ -232,12 +232,17 @@ mod tests {
         let start = Color::srgb_u8(105, 220, 58);
         let end = Color::srgb_u8(10, 20, 100);
 
-        let blend_oklab = start.convert::<Oklab>()
+        let blend_oklab = start
+            .convert::<Oklab>()
             .perceptual_blend(end.convert(), 0.5);
 
         let blend = blend_oklab.convert::<SrgbU8>();
 
-        assert_eq_eps!(blend_oklab, Color::oklab(0.52740586, -0.085545816, 0.004893869), 0.0001);
+        assert_eq_eps!(
+            blend_oklab,
+            Color::oklab(0.52740586, -0.085545816, 0.004893869),
+            0.0001
+        );
         assert_eq_eps!(blend, Color::srgb_u8(35, 123, 105), 0);
     }
 }
