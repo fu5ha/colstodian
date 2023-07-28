@@ -20,21 +20,16 @@ fn f32_to_u8(x: f32) -> u8 {
     (x.clamp(0.0, 1.0) * 255.0) as u8
 }
 
-/// The fully-encoded form of the sRGB color encoding standard.
-///
-/// This is one of the most common color encodings. If you have three u8 values (0-255)
-/// or a hex code with 6 digits, this is almost certainly the encoding those values are encoded in.
-///
-/// If you have four u8 values (0-255) or a hex code with 8 digits, you likely have
-/// a color in the [`SrgbAU8`] encoding instead.
-///
-/// This color encoding is defined as the strict sRGB color encoding standard, with
-/// OETF applied and encoded into 8 bits per component.
+#[doc = include_str!("descriptions/srgb_u8.md")]
 pub struct SrgbU8;
 
 impl Color<SrgbU8> {
-    /// If you have no idea wtf is a color management and you have 3 u8s, use this.
-    /// TODO: unify docs
+    /// Create a [`Color`] in the [`SrgbU8`] encoding.
+    ///
+    /// **If you don't know what you're doing and you have RGB values from a color picker that vary
+    /// from `0-255`, use this.**
+    ///
+    /// If you're not sure, see [the `SrgbU8` encoding docs][SrgbU8] for more info.
     #[inline(always)]
     pub const fn srgb_u8(r: u8, g: u8, b: u8) -> Self {
         Color::from_repr([r, g, b])
@@ -80,17 +75,16 @@ impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbU8 {}
 // TODO: oklab gamut clipping
 impl ConvertFrom<Oklab> for SrgbU8 {}
 
-/// The non-linear sRGB color encoding in 32 bit per component floats.
-///
-/// This is a moderately common way to specify color values.
-/// If you have floating point values from 0.0 to 1.0 which are directly analogous to
-/// the 0-255 form (i.e. `(0.5, 0.5, 0.5)` should be the same as `(127, 127, 127)`), then this
-/// is the color encoding you have. If you have the same kind of values but with a fourth alpha component,
-/// then you have [`SrgbAF32`] instead.
+#[doc = include_str!("descriptions/srgb_f32.md")]
 pub struct SrgbF32;
 
 impl Color<SrgbF32> {
-    /// If you have no idea wtf a color management is and have 3 floats, use this.
+    /// Create a [`Color`] in the [`SrgbF32`] encoding.
+    ///
+    /// **If you don't know what you're doing and you have RGB values from a color picker that vary
+    /// from `0.0..=1.0`, use this.**
+    ///
+    /// If you're not sure, see [the `SrgbF32` encoding docs][SrgbF32] for more info.
     #[inline(always)]
     pub const fn srgb_f32(r: f32, g: f32, b: f32) -> Self {
         Color::from_repr(Vec3::new(r, g, b))
@@ -129,20 +123,16 @@ impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbF32 {}
 // TODO: oklab gamut clipping
 impl ConvertFrom<Oklab> for SrgbF32 {}
 
-/// The fully-encoded form of the sRGB color encoding standard, with separate alpha component.
-///
-/// This is one of the most common color encodings. If you have four u8 values (0-255)
-/// or a hex code with 8 digits, this is almost certainly the encoding those values are encoded in.
-///
-/// If you have three u8 values (0-255) or a hex code with 6 digits, you likely have
-/// a color in the [`SrgbU8`] encoding instead.
-///
-/// This color encoding is defined as the strict sRGB color encoding standard, with
-/// OETF applied and encoded into 8 bits per component.
+#[doc = include_str!("descriptions/srgba_u8.md")]
 pub struct SrgbAU8;
 
 impl Color<SrgbAU8> {
-    /// If you have no idea wtf is a color management and you have 4 u8s, use this.
+    /// Create a [`Color`] in the [`SrgbAU8`] encoding.
+    ///
+    /// **If you don't know what you're doing and you have RGBA values from a color picker that vary
+    /// from `0-255`, use this.**
+    ///
+    /// If you're not sure, see [the `SrgbAU8` encoding docs][SrgbAU8] for more info.
     #[inline(always)]
     pub const fn srgba_u8(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self::from_repr([r, g, b, a])
@@ -190,17 +180,16 @@ impl ConvertFrom<LinearSrgbAPremultiplied> for SrgbAU8 {}
 // TODO: oklab gamut clipping
 impl ConvertFrom<Oklab> for SrgbAU8 {}
 
-/// The non-linear sRGB color encoding in 32 bit per component floats with separate alpha.
-///
-/// This is a moderately common way to specify color values.
-/// If you have four floating point values from 0.0 to 1.0 which are directly analogous to
-/// the 0-255 form (i.e. `(0.5, 0.5, 0.5, 0.5)` should be the same as `(127, 127, 127, 127)`), then this
-/// is the color encoding you have. If you have the same kind of values but with no alpha component,
-/// then you have [`SrgbF32`] instead.
+#[doc = include_str!("descriptions/srgba_f32.md")]
 pub struct SrgbAF32;
 
 impl Color<SrgbAF32> {
-    /// If you have no idea wtf a color management is and have 4 floats, use this.
+    /// Create a [`Color`] in the [`SrgbAF32`] encoding.
+    ///
+    /// **If you don't know what you're doing and you have RGB values from a color picker that vary
+    /// from `0.0..=1.0`, use this.**
+    ///
+    /// If you're not sure, see [the `SrgbAF32` encoding docs][SrgbAF32] for more info.
     #[inline(always)]
     pub const fn srgba_f32(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color::from_repr(Vec4::new(r, g, b, a))
@@ -306,7 +295,8 @@ impl AlphaOver for SrgbAU8Premultiplied {
 
 /// The linear form of the sRGB color encoding standard.
 ///
-/// This is a moderately common way to specify color values.
+/// This is a moderately rare way to specify color values.
+///
 /// If you have three f32s which are *not* directly related to the u8 form, or you otherwise know should be
 /// "linear rgb" values, then this is the encoding you have. If you instead have four values with an alpha
 /// component where the alpha component varies independently of the color components, you have [`LinearSrgbA`] values.
@@ -315,6 +305,10 @@ impl AlphaOver for SrgbAU8Premultiplied {
 pub struct LinearSrgb;
 
 impl Color<LinearSrgb> {
+    /// Create a [`Color`] in the [`LinearSrgb`] encoding.
+    ///
+    /// If you're not sure, you should probably use [`Color::srgb_f32`] instead.
+    /// See [the `LinearSrgb` encoding docs][LinearSrgb] for more info.
     #[inline(always)]
     pub fn linear_srgb(r: f32, g: f32, b: f32) -> Self {
         Color::from_repr(Vec3::new(r, g, b))
@@ -356,6 +350,7 @@ impl WorkingEncoding for LinearSrgb {}
 /// The linear form of the sRGB color encoding standard with a separate alpha component.
 ///
 /// This is a moderately common way to specify color values.
+///
 /// If you have four f32s which are *not* directly related to the u8 form, or you otherwise know should be
 /// "linear rgb" values, and the alpha component varies independently of the color componewnts,
 /// then this is the encoding you have. If you instead have three values, you have [`LinearSrgb`] values.
@@ -364,6 +359,10 @@ impl WorkingEncoding for LinearSrgb {}
 pub struct LinearSrgbA;
 
 impl Color<LinearSrgbA> {
+    /// Create a [`Color`] in the [`LinearSrgbA`] encoding.
+    ///
+    /// If you're not sure, you should probably use [`Color::srgba_f32`] instead.
+    /// See [the `LinearSrgbA` encoding docs][LinearSrgbA] for more info.
     #[inline(always)]
     pub fn linear_srgba(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color::from_repr(Vec4::new(r, g, b, a))
@@ -413,7 +412,13 @@ impl AlphaOver for LinearSrgbA {
 
 /// The linear form of the sRGB color encoding standard with a *premultiplied* alpha component.
 ///
-/// This is a moderately common way to specify color values.
+/// "Premultiplied" alpha means that the value of the color components has been multiplied by the
+/// alpha component. This operation is unintuitive when specifying color values, but it is the
+/// "most correct" way to store color values with an alpha component when performing operations
+/// like blending and compositing on them.
+///
+/// This is a relatively rare way to specify color values.
+///
 /// If you have four f32s which are *not* directly related to the u8 form, or you otherwise know should be
 /// "linear rgb" values, and the alpha component varies independently of the color componewnts,
 /// then this is the encoding you have. If you instead have three values, you have [`LinearSrgb`] values.
@@ -422,6 +427,14 @@ impl AlphaOver for LinearSrgbA {
 pub struct LinearSrgbAPremultiplied;
 
 impl Color<LinearSrgbAPremultiplied> {
+    /// Create a [`Color`] in the [`LinearSrgbAPremultiplied`] encoding.
+    ///
+    /// "Premultiplied" alpha means that the value of the color components has been multiplied by the
+    /// alpha component. This operation is unintuitive when specifying color values, but it is the
+    /// "most correct" way to store color values with an alpha component when performing operations
+    /// like blending and compositing on them.
+    ///
+    /// If you're not sure, see [the `LinearSrgbA` encoding docs][LinearSrgbA] for more info.
     #[inline(always)]
     pub fn linear_srgba_premultiplied(r: f32, g: f32, b: f32, a: f32) -> Self {
         Color::from_repr(Vec4::new(r, g, b, a))
@@ -467,10 +480,14 @@ impl AlphaOver for LinearSrgbAPremultiplied {
     }
 }
 
-/// The Oklab perceptual color space.
+/// A 32-bit-per-component version of the Oklab perceptually-uniform color space.
 pub struct Oklab;
 
 impl Color<Oklab> {
+    /// Create a [`Color`] in the [`Oklab`] color encoding.
+    ///
+    /// This is fairly rare, it would be more common to specify colors in another color encoding like
+    /// [`SrgbU8`] and then convert them to [`Oklab`] to blend them together.
     #[inline(always)]
     pub fn oklab(l: f32, a: f32, b: f32) -> Self {
         Color::from_repr(Vec3::new(l, a, b))

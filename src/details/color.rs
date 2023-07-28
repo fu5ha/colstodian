@@ -16,7 +16,17 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use core::fmt;
 use core::ops::*;
 
-/// A strongly typed color, parameterized by a [`ColorEncoding`]
+/// A strongly typed color, parameterized by a [`ColorEncoding`].
+///
+/// [`Color`] is a unified type that defines a color in any [`ColorEncoding`].
+/// The [`ColorEncoding`] defines a bunch of different properties about how the
+/// color values are stored and what those values actually mean. For example,
+/// [`Color<SrgbU8>`] is a color with red, green, and blue values that vary from
+/// `0-255` and the meaning of those values is defined by the full sRGB color encoding standard.
+/// The most common and standard color encodings are exposed in the
+/// [`basic_encodings`][crate::basic_encodings] module.
+///
+/// To create a new [`Color`] value, see the list of constructor helpers in the docs below.
 #[repr(transparent)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -40,19 +50,8 @@ impl<E: ColorEncoding> Clone for Color<E> {
     }
 }
 
-// impl<Spc, St> From<[f32; 3]> for Color<Spc, St> {
-//     fn from(color: [f32; 3]) -> Self {
-//         Self::new(color[0], color[1], color[2])
-//     }
-// }
-
-// impl<Spc, St> AsRef<[f32; 3]> for Color<Spc, St> {
-//     fn as_ref(&self) -> &[f32; 3] {
-//         self.raw.as_ref()
-//     }
-// }
 impl<E: ColorEncoding> Color<E> {
-    /// Creates a [`Color`] from the raw data representation
+    /// Creates a [`Color`] from the raw data representation of the specified color encoding.
     #[inline(always)]
     pub const fn from_repr(repr: E::Repr) -> Self {
         Self { repr }
@@ -145,12 +144,23 @@ where
     }
 }
 
+impl<T, E> AsRef<T> for Color<E>
+where
+    E: ColorEncoding,
+    E::Repr: AsRef<T>,
+{
+    #[inline(always)]
+    fn as_ref(&self) -> &T {
+        self.repr.as_ref()
+    }
+}
+
 impl<E> PartialEq for Color<E>
 where
     E: ColorEncoding,
     E::Repr: PartialEq,
 {
-    #[inline]
+    #[inline(always)]
     fn eq(&self, other: &Color<E>) -> bool {
         self.repr == other.repr
     }
@@ -178,17 +188,6 @@ where
 #[cfg(feature = "bytemuck")]
 unsafe impl<E: ColorEncoding> bytemuck::TransparentWrapper<E::Repr> for Color<E> {}
 
-#[cfg(not(target_arch = "spirv"))]
-impl<E> fmt::Display for Color<E>
-where
-    E: ColorEncoding,
-    E::ComponentStruct: fmt::Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Color<{}>({})", E::NAME, <Self as Deref>::deref(self))
-    }
-}
-
 impl<E: ColorEncoding> Deref for Color<E> {
     type Target = E::ComponentStruct;
 
@@ -204,8 +203,20 @@ impl<E: ColorEncoding> DerefMut for Color<E> {
         <E::ComponentStruct as ComponentStructFor<E::Repr>>::cast_mut(&mut self.repr)
     }
 }
+
 #[cfg(not(target_arch = "spirv"))]
 impl<E> fmt::Debug for Color<E>
+where
+    E: ColorEncoding,
+    E::ComponentStruct: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Color<{}>({:?})", E::NAME, <Self as Deref>::deref(self))
+    }
+}
+
+#[cfg(not(target_arch = "spirv"))]
+impl<E> fmt::Display for Color<E>
 where
     E: ColorEncoding,
     E::ComponentStruct: fmt::Display,

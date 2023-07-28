@@ -62,9 +62,17 @@ unsafe impl ComponentStructFor<F32Repr> for Rgb<f32> {
 #[cfg(not(target_arch = "spirv"))]
 impl<T: fmt::Display> fmt::Display for Rgb<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "R: {:.3}, G: {:.3}, B: {:.3}", self.r, self.g, self.b)
+    }
+}
+
+#[cfg(not(target_arch = "spirv"))]
+impl<T: fmt::Display> fmt::Debug for Rgb<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "R: {}, G: {}, B: {}", self.r, self.g, self.b)
     }
 }
+
 /// A bag of components with names R, G, B, A. Some `Color`s with RGBA color encodings
 /// will `Deref`/`DerefMut` to this struct so that you can access their components with dot-syntax.
 #[repr(C)]
@@ -103,7 +111,22 @@ unsafe impl ComponentStructFor<F32ARepr> for RgbA<f32> {
 #[cfg(not(target_arch = "spirv"))]
 impl<T: fmt::Display> fmt::Display for RgbA<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "R: {}, G: {}, B: {}", self.r, self.g, self.b)
+        write!(
+            f,
+            "R: {:.3}, G: {:.3}, B: {:.3}, A: {:.3}",
+            self.r, self.g, self.b, self.a
+        )
+    }
+}
+
+#[cfg(not(target_arch = "spirv"))]
+impl<T: fmt::Display> fmt::Debug for RgbA<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "R: {}, G: {}, B: {}, A: {}",
+            self.r, self.g, self.b, self.a
+        )
     }
 }
 
@@ -143,6 +166,13 @@ unsafe impl ComponentStructFor<F32Repr> for Lab<f32> {
 
 #[cfg(not(target_arch = "spirv"))]
 impl<T: fmt::Display> fmt::Display for Lab<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "L: {:.3}, a: {:.3}, b: {:.3}", self.l, self.a, self.b)
+    }
+}
+
+#[cfg(not(target_arch = "spirv"))]
+impl<T: fmt::Display> fmt::Debug for Lab<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "L: {}, a: {}, b: {}", self.l, self.a, self.b)
     }

@@ -5,8 +5,16 @@ use crate::Color;
 use glam::Vec3;
 use kolor::details::color::{RGBPrimaries, WhitePoint};
 
+/// A type that implements [`ColorEncoding`] represents a collection of metadata
+/// that together defines how a color's data is stored and what the values of that data
+/// actually mean.
+///
+/// You can see a list of all the built-in color encodings in [`crate::details::encodings`].
 pub trait ColorEncoding: Sized + 'static {
     /// The raw data representation used by this encoding.
+    ///
+    /// You can see a list of all the reprs used by the built-in encodings
+    /// in [`crate::details::reprs`].
     type Repr: ColorRepr;
 
     /// The 'bag of components' this color encoding uses.
@@ -79,7 +87,10 @@ where
     }
 }
 
-/// Implemented by color encodings which are designed to be perceptually-linear.
+/// Implemented by color encodings which are designed to be perceptually-uniform. In general these encodings
+/// will produce more visually pleasing results when blending between colors (for example, creating gradients)
+/// in many situations. However they are certainly not, silver bullets, and often don't fully deliver on the
+/// promise of perceptual uniformity.
 pub trait PerceptualEncoding: ColorEncoding + WorkingEncoding {}
 
 /// Marks a type as representing a color encoding in which it makes sense to be able to perform mathematical
