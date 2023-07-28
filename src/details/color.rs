@@ -27,6 +27,63 @@ use core::ops::*;
 /// [`basic_encodings`][crate::basic_encodings] module.
 ///
 /// To create a new [`Color`] value, see the list of constructor helpers in the docs below.
+///
+/// There are several ways to work with an existing color. First, you can always access the raw data
+/// in the encoding's [`Repr`][ColorEncoding::Repr] directly by accessing `col.repr`. You can also always
+/// access the individual named color components through dot-syntax because of the `Deref` and `DerefMut`
+/// impls to the encoding's [`ComponentStruct`][ColorEncoding::ComponentStruct]. For example, in an RGB color space,
+/// you can access the components with `.r`, `.g`, and `.b`.
+///
+/// ```
+/// # use colstodian::Color;
+/// # use colstodian::basic_encodings::{LinearSrgb, SrgbU8};
+/// # use glam::Vec3;
+///
+/// let col: Color<SrgbU8> = Color::srgb_u8(100u8, 105u8, 220u8);
+///
+/// assert_eq!(col.repr, [100u8, 105u8, 220u8]);
+///
+/// let mut col2: Color<LinearSrgb> = Color::linear_srgb(0.5, 1.0, 0.25);
+///
+/// assert_eq!(col2.repr, Vec3::new(0.5, 1.0, 0.25));
+///
+/// col2.b = 0.75;
+///
+/// assert_eq!(col2.r, 0.5);
+/// assert_eq!(col2.g, 1.0);
+/// assert_eq!(col2.b, 0.75);
+/// ```
+///
+/// In order to do math on color types without accessing the underlying repr directly, you'll need
+/// to be in a [`WorkingEncoding`], which is a trait implemented by encodings that support doing
+/// such math operations well.
+///
+/// You can convert between color encodings using the [`.convert::<E>()`][Color::convert] method.
+///
+/// ### Basic Conversion Example
+///
+/// Here we construct two colors in different ways, convert them both to [`LinearSrgb`] to work with them,
+/// and then convert the resul to [`SrgbU8`] which can be passed on to be displayed in an image.
+///
+/// ```
+/// use colstodian::Color;
+/// use colstodian::basic_encodings::{SrgbU8, LinearSrgb};
+///
+/// let color1 = Color::srgb_u8(102, 54, 220);
+/// let color2 = Color::srgb_f32(0.5, 0.8, 0.1);
+///
+/// let color1_working = color1.convert::<LinearSrgb>();
+/// let color2_working = color2.convert::<LinearSrgb>();
+///
+/// let result_working = color1_working * 0.5 + color2_working;
+///
+/// let output = result_working.convert::<SrgbU8>();
+///
+/// assert_eq!(output, Color::srgb_u8(144, 206, 163));
+/// ```
+///
+/// [`LinearSrgb`]: crate::details::encodings::LinearSrgb
+/// [`SrgbU8`]: crate::details::encodings::SrgbU8
 #[repr(transparent)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
