@@ -130,8 +130,48 @@ pub use traits::WorkingEncoding;
 #[doc(inline)]
 pub use traits::PerceptualEncoding;
 
-#[doc(inline)]
-pub use traits::ColorInto;
+/// Like [`Into`] but specialized for use with `colstodian` [`Color`] types.
+///
+/// This trait exists so that functions can accept colors in a variety of encodings
+/// generically in an ergonomic fashion. [`ColorInto`] is blanket implemented generically
+/// so that, if you have a function parameter `impl ColorInto<Color<SomeEncoding>>`,
+/// a [`Color`] in any other encoding that is able to `.convert::<SomeEncoding>()` can be
+/// passed into that function as argument directly.
+///
+/// # Example
+///
+/// ```
+/// # use colstodian::*;
+/// # use colstodian::details::encodings::*;
+/// type MyColor = Color<LinearSrgb>;
+///
+/// fn test_fn(input: impl ColorInto<MyColor>) {
+///     let input: MyColor = input.color_into();
+///     let correct = Color::linear_srgb(0.14703, 0.42327, 0.22323);
+///     assert_eq_eps!(input, correct, 0.0001);
+/// }
+///
+/// test_fn(Color::srgb_u8(107, 174, 130));
+/// test_fn(Color::srgb_f32(0.41961, 0.68235, 0.5098));
+/// ```
+pub trait ColorInto<DstCol> {
+    fn color_into(self) -> DstCol;
+}
+
+use details::traits::ConvertFrom;
+use details::traits::LinearConvertFromRaw;
+
+impl<SrcEnc, DstEnc> ColorInto<Color<DstEnc>> for Color<SrcEnc>
+where
+    SrcEnc: ColorEncoding,
+    DstEnc: ColorEncoding + ConvertFrom<SrcEnc>,
+    DstEnc::LinearSpace: LinearConvertFromRaw<SrcEnc::LinearSpace>,
+{
+    #[inline(always)]
+    fn color_into(self) -> Color<DstEnc> {
+        self.convert()
+    }
+}
 
 #[cfg(test)]
 mod tests {

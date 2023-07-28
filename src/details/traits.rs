@@ -134,22 +134,6 @@ pub trait LinearConvertFromRaw<SrcSpace: LinearColorSpace>: LinearColorSpace {
     fn linear_part_raw(raw: &mut Vec3);
 }
 
-pub trait ColorInto<DstCol> {
-    fn color_into(self) -> DstCol;
-}
-
-impl<SrcEnc, DstEnc> ColorInto<Color<DstEnc>> for Color<SrcEnc>
-where
-    SrcEnc: ColorEncoding,
-    DstEnc: ColorEncoding + ConvertFrom<SrcEnc>,
-    DstEnc::LinearSpace: LinearConvertFromRaw<SrcEnc::LinearSpace>,
-{
-    #[inline(always)]
-    fn color_into(self) -> Color<DstEnc> {
-        self.convert()
-    }
-}
-
 // /// A "conversion query" for a [`Color`][crate::Color].
 // ///
 // /// A type that implements this
