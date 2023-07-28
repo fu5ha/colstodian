@@ -116,7 +116,7 @@ where
 {
     /// If required or desired, perform a mapping of some kind to the input
     /// before it undergoes its source transform. This may be desirable to perform some form of
-    /// gamut mapping if the src encoding has a larger size of representable colors than te dst encoding.
+    /// gamut mapping if the src encoding has a larger size of representable colors than the dst encoding.
     #[inline(always)]
     fn map_src(_src: &mut SrcEnc::Repr) {}
 }
@@ -133,24 +133,3 @@ where
 pub trait LinearConvertFromRaw<SrcSpace: LinearColorSpace>: LinearColorSpace {
     fn linear_part_raw(raw: &mut Vec3);
 }
-
-// /// A "conversion query" for a [`Color`][crate::Color].
-// ///
-// /// A type that implements this
-// /// trait is able to be used as the type parameter for [`Color::convert`][crate::Color::convert].
-// ///
-// /// The types that implement this trait are:
-// /// * [`ColorSpace`] types
-// /// * [`Color`][crate::Color] types (in which case it will be converted to that color's space)
-// pub trait ColorConversionQuery<SrcSpace: LinearColorSpace, St: State> {
-//     type DstSpace: ConvertFromRaw<SrcSpace>;
-// }
-
-// impl<SrcSpace, DstSpace, St> ColorConversionQuery<SrcSpace, St> for Color<DstSpace, St>
-// where
-//     SrcSpace: LinearColorSpace,
-//     DstSpace: ConvertFromRaw<SrcSpace>,
-//     St: State,
-// {
-//     type DstSpace = DstSpace;
-// }
