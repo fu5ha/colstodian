@@ -182,6 +182,9 @@ pub mod equals_eps {
     use super::*;
     use reprs::*;
     use traits::*;
+    
+    #[cfg(feature = "libm")]
+    use num_traits::float::Float;
 
     pub trait EqualsEps<T> {
         fn eq_eps(self, other: Self, eps: T) -> bool;
@@ -195,7 +198,7 @@ pub mod equals_eps {
 
     impl EqualsEps<u8> for u8 {
         fn eq_eps(self, other: u8, eps: u8) -> bool {
-            (self as i32 - other as i32).abs() as u8 <= eps
+            (self as i32 - other as i32).unsigned_abs() as u8 <= eps
         }
     }
 
