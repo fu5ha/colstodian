@@ -18,20 +18,26 @@ pub trait ColorEncoding: Sized + 'static {
     type Repr: ColorRepr;
 
     /// The 'bag of components' this color encoding uses.
+    ///
+    /// You can see a list of all the built-in component structs in
+    /// [`crate::details::component_structs`].
     type ComponentStruct: ComponentStructFor<Self::Repr>;
 
     /// The [`LinearColorSpace`] used by this encoding.
+    ///
+    /// You can see all the built-in linear spaces in
+    /// [`crate::details::linear_spaces`]
     type LinearSpace: LinearColorSpace;
 
-    /// Used in `Debug` and `Default` implementations.
+    /// Used in `Debug` and `Display` implementations.
     const NAME: &'static str;
 
     /// Convert from `Self::Repr` to a `glam::Vec3` in the `Self::LinearSpace` color space and a separate
     /// (not pre-multiplied) alpha component. If this encoding does not have alpha, return 1.0.
     fn src_transform_raw(repr: Self::Repr) -> (Vec3, f32);
 
-    /// Convert from a `glam::Vec3` in `Self::LinearSpace` and separate alpha to a `Self::Repr`. If this encoding
-    /// does not have alpha, you can disregard it.
+    /// Convert from a `glam::Vec3` in `Self::LinearSpace` and separate alpha component to a `Self::Repr` fully
+    /// encoded in `Self`'s color encoding. If this encoding does not have alpha, you can disregard it.
     fn dst_transform_raw(raw: Vec3, alpha: f32) -> Self::Repr;
 }
 
@@ -48,13 +54,16 @@ pub unsafe trait ComponentStructFor<Repr: ColorRepr>:
     fn cast_mut(repr: &mut Repr) -> &mut Self;
 }
 
-/// Implemented by the raw data representation of a color encoding
+/// Implemented by the raw data representation of a color encoding.
+///
+/// You can see a list of all the reprs used by the built-in encodings
+/// in [`crate::details::reprs`].
 pub trait ColorRepr: Sized + Clone + Copy + 'static {
     /// The type of a single element of this repr
     type Element: Sized + Clone + Copy + 'static;
 }
 
-/// Implemented by color encodings that can do alpha compositing
+/// Implemented by color encodings that can do alpha compositing.
 pub trait AlphaOver: ColorEncoding {
     fn composite(over: Color<Self>, under: Color<Self>) -> Color<Self>;
 }
@@ -101,13 +110,22 @@ pub trait WorkingEncoding: ColorEncoding {}
 /// (i.e. a 3x3 matrix multiplication) from the CIE XYZ color space.
 ///
 /// A linear color space is defined by the combination of a set of [Primaries][RGBPrimaries] and a [White Point][WhitePoint].
+///
+/// You can see all the built-in linear spaces in [`crate::details::linear_spaces`]
 pub trait LinearColorSpace {
     const PRIMARIES: RGBPrimaries;
     const WHITE_POINT: WhitePoint;
 }
 
 /// A trait that marks `Self` as being a color encoding which is able to be directly converted from `SrcEnc`,
-/// as well as allowing some hooks to perform extra mapping during the conversion if necessary.
+/// as well as allowing some hooks to perform extra mapping during the conversion if necessary. This is the trait that
+/// unlocks the [`.convert::<E>`][Color::convert] method on [`Color`].
+///
+/// In order to be able to [`convert`][Color::convert] from [`Color<EncodingA>`] to [`Color<EncodingB>`], `EncodingB`
+/// must implement [`ConvertFrom<EncodingA>`].
+///
+/// If this trait is not implemented for a pair of encodings, then a direct conversion without input or choice from the user
+/// is not possible, and a conversion between the encodings will need to be performed manually or in more than one step.
 pub trait ConvertFrom<SrcEnc>
 where
     SrcEnc: ColorEncoding,

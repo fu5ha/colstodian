@@ -135,20 +135,23 @@ pub use traits::PerceptualEncoding;
 /// This trait exists so that functions can accept colors in a variety of encodings
 /// generically in an ergonomic fashion. [`ColorInto`] is blanket implemented generically
 /// so that, if you have a function parameter `impl ColorInto<Color<SomeEncoding>>`,
-/// a [`Color`] in any other encoding that is able to `.convert::<SomeEncoding>()` can be
-/// passed into that function as argument directly.
+/// a [`Color`] in any other encoding that is able to [`.convert::<SomeEncoding>()`][Color::convert]
+/// can be passed into that function as argument directly.
+///
+/// See [the docs of the `convert` method on `Color`][Color::convert] for more.
 ///
 /// # Example
 ///
 /// ```
 /// # use colstodian::*;
 /// # use colstodian::details::encodings::*;
+/// # use colstodian::equals_eps::*;
 /// type MyColor = Color<LinearSrgb>;
 ///
 /// fn test_fn(input: impl ColorInto<MyColor>) {
 ///     let input: MyColor = input.color_into();
 ///     let correct = Color::linear_srgb(0.14703, 0.42327, 0.22323);
-///     assert_eq_eps!(input, correct, 0.0001);
+///     assert_eq_eps!(input, correct, 0.00001);
 /// }
 ///
 /// test_fn(Color::srgb_u8(107, 174, 130));
@@ -173,15 +176,14 @@ where
     }
 }
 
-#[cfg(test)]
-mod tests {
+/// Helper for use in tests and doctests
+#[doc(hidden)]
+pub mod equals_eps {
     use super::*;
-    use encodings::*;
-    use glam::Vec3;
     use reprs::*;
     use traits::*;
 
-    trait EqualsEps<T> {
+    pub trait EqualsEps<T> {
         fn eq_eps(self, other: Self, eps: T) -> bool;
     }
 
@@ -240,6 +242,7 @@ mod tests {
         }
     }
 
+    #[macro_export]
     macro_rules! assert_eq_eps {
         ($left:expr, $right:expr, $eps:expr) => {{
             match (&($left), &($right)) {
@@ -259,6 +262,14 @@ mod tests {
             }
         }};
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use encodings::*;
+    use equals_eps::*;
+    use glam::Vec3;
 
     #[test]
     fn basic() {

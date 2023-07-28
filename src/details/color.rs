@@ -117,6 +117,32 @@ impl<E: ColorEncoding> Color<E> {
 
 impl<SrcEnc: ColorEncoding> Color<SrcEnc> {
     /// Converts `self` from one color encoding to another.
+    ///
+    /// In order to be able to [`convert`][Color::convert] from `EncodingA` to `EncodingB`, `EncodingB`
+    /// must implement [`ConvertFrom<EncodingA>`].
+    ///
+    /// If that trait is not implemented for a pair of encodings, then a direct conversion without input or choice from the user
+    /// is not possible, and a conversion between the encodings will need to be performed manually or in more than one step.
+    ///
+    /// If you are able to [`convert`][Color::convert] from `EncodingA` to `EncodingB`, then you can also use a
+    /// `Color<EncodingA>` anywhere you need a type that implements [`ColorInto<Color<EncodingB>>`][crate::ColorInto]!
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// # use colstodian::*;
+    /// # use colstodian::basic_encodings::*;
+    /// # use colstodian::equals_eps::*;
+    /// let grey_f32 = Color::srgb_f32(0.5, 0.5, 0.5);
+    /// let grey_u8 = Color::srgb_u8(127, 127, 127);
+    ///
+    /// assert_eq_eps!(grey_f32.convert::<SrgbU8>(), grey_u8, 0);
+    ///
+    /// let col = Color::srgb_u8(102, 51, 153);
+    /// let col_linear_srgb = col.convert::<LinearSrgb>();
+    ///
+    /// assert_eq_eps!(col_linear_srgb, Color::linear_srgb(0.13287, 0.0331, 0.31855), 0.0001);
+    /// ```
     pub fn convert<DstEnc>(self) -> Color<DstEnc>
     where
         DstEnc: ColorEncoding + ConvertFrom<SrcEnc>,
