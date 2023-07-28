@@ -121,6 +121,13 @@ where
     fn map_src(_src: &mut SrcEnc::Repr) {}
 }
 
+impl<E> ConvertFrom<E> for E
+where
+    E: ColorEncoding,
+    E::LinearSpace: LinearConvertFromRaw<E::LinearSpace>,
+{
+}
+
 /// Performs the raw conversion from the [`LinearColorSpace`] represented by `SrcSpc` to
 /// the [`LinearColorSpace`] represented by `Self`.
 pub trait LinearConvertFromRaw<SrcSpace: LinearColorSpace>: LinearColorSpace {
