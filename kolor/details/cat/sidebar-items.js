@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["LMSConeSpace"],"fn":["chromatic_adaptation_transform","lms_cone_space_matrix"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["AlphaOver","ColorEncoding","ColorRepr","ComponentStructFor","ConvertFrom","LinearColorSpace","LinearConvertFromRaw","LinearInterpolate","PerceptualEncoding","Saturate","WorkingEncoding"]};

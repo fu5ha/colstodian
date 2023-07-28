@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="kolor implements conversions between color spaces which use 3-component vectors."><title>kolor - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-f3501f0f5ae15dfb.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="kolor" data-themes="" data-resource-suffix="" data-rustdoc-version="1.71.0 (8ede3aae2 2023-07-12)" data-search-js="search-4926e5fc22a5646a.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-0f8c037637f9eb3e.css" data-theme-dark-css="dark-1097f8e92a01e3cf.css" data-theme-ayu-css="ayu-614652228113ac93.css" ></div><script src="../static.files/storage-62ce34ea385b278a.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-f0540c1d82cde29b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-0f8c037637f9eb3e.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-1097f8e92a01e3cf.css"><link rel="stylesheet" href="../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="../kolor/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2></h2></nav><nav class="sidebar"><a class="logo-container" href="../kolor/index.html"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 class="location"><a href="#">Crate kolor</a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.1.9</li><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#types">Type Definitions</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1>Crate <a class="mod" href="#">kolor</a><button id="copy-path" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../src/kolor/lib.rs.html#1-155">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>kolor implements conversions between color spaces which use 3-component vectors.</p>
+<p>kolor is intended for use in games or other interactive visual applications,
+where it can help implement correct color management and wide color gamut rendering.</p>
+<h2 id="named-color-spaces"><a href="#named-color-spaces">Named color spaces</a></h2>
+<p>Named color space definitions can be found in <a href="spaces/index.html" title="mod kolor::spaces">spaces</a>. Some notable color spaces and models:</p>
+<ul>
+<li>sRGB / linear sRGB / BT.709</li>
+<li>BT.2020</li>
+<li>ACEScg</li>
+<li>ACES2065-1</li>
+<li>Oklab</li>
+<li>CIE LAB / Lch / Luv / xyY / uvV</li>
+<li>HSL / HSV / HSI</li>
+<li>ICtCp</li>
+</ul>
+<p>You can also construct custom <a href="struct.ColorSpace.html" title="struct kolor::ColorSpace">ColorSpace</a>s
+from a combination of primaries, whitepoint and transform function.</p>
+<h2 id="design"><a href="#design">Design</a></h2>
+<p>kolor aims to supports all color spaces and color models which use 3-component vectors,
+such as RGB, LAB, XYZ, HSL and more.</p>
+<p>In the spirit of keeping things simple, kolor uses a single type, <a href="struct.Color.html" title="struct kolor::Color">Color</a>, to represent
+a color in any supported color space.</p>
+<p>kolor can programmatically generate an efficient conversion between any two color spaces
+by using the CIE XYZ color space as a “connecting space”, meaning all supported color spaces
+only need to support a conversion to a reference color space that is a linear
+transform of the CIE XYZ color space.</p>
+<p>Transformations between linear color spaces can be implemented with a 3x3 matrix, and
+since 3x3 matrices are composable, these matrices can be pre-composed and applied to a color
+with a single multiply.</p>
+<p>kolor recognizes that users may want to perform conversions on colors stored in types defined
+by the user. <a href="struct.ColorConversion.html" title="struct kolor::ColorConversion">ColorConversion</a> represents a conversion between two color spaces
+and is intended to be compatible with 3-component vectors in many math libraries.</p>
+<p>kolor defines conversions from a source <a href="struct.ColorSpace.html" title="struct kolor::ColorSpace">ColorSpace</a> to a destination <a href="struct.ColorSpace.html" title="struct kolor::ColorSpace">ColorSpace</a> as three parts:</p>
+<ul>
+<li>if the source color space is non-linear,
+apply the inverse of its transform function to convert to the non-linear color space’s reference
+color space (which is always linear)</li>
+<li>a linear 3x3 transformation matrix from the source to the destination linear color space</li>
+<li>if the destination color space is a non-linear color space,
+apply its transform function</li>
+</ul>
+<p>A “non-linear transform function” means any function that cannot be expressed as a linear transformation
+of the CIE XYZ color space. Examples include the sRGB logarithmic gamma compensation function,
+the Oklab transform function, and the HSL/HSV hexagonal/circular transform.</p>
+<p>For non-linear color spaces, many transform functions are supported
+to convert between popular spaces, but for GPU contexts, these implementations clearly can’t be used directly.
+To implement data-driven conversions, you can read the required operations for transforming between spaces
+from a <a href="struct.ColorConversion.html" title="struct kolor::ColorConversion">ColorConversion</a> value and run these as appropriate.
+Feel free to port the implementations in <a href="details/transform/index.html" title="mod kolor::details::transform">details::transform</a> to your shaders or other code.</p>
+<h4 id="gamut-agnostic-transforms"><a href="#gamut-agnostic-transforms">Gamut-agnostic transforms</a></h4>
+<p>Some color models like CIELAB or HSL are intended to provide an alternate view of
+some linear color spaces, and need a reference color space to provide information like
+which white point or RGB primaries to use.
+To construct these color spaces, refer to associated methods on <a href="struct.ColorSpace.html" title="struct kolor::ColorSpace">ColorSpace</a> and use an appropriate
+reference color space.</p>
+<h2 id="details"><a href="#details">Details</a></h2>
+<p>kolor can calculate 3x3 conversion matrices between any linear color space
+defined by RGB primaries and a white point. kolor offers APIs for performing
+conversions directly, and for extracting the 3x3 matrix to use in a different context,
+for example on a GPU.</p>
+<h4 id="generating-conversion-matrices-between-rgb-color-spaces"><a href="#generating-conversion-matrices-between-rgb-color-spaces">Generating conversion matrices between RGB color spaces</a></h4>
+<p><a href="details/conversion/struct.LinearColorConversion.html" title="struct kolor::details::conversion::LinearColorConversion">LinearColorConversion</a> can be used
+to generate conversion matrices “offline”,
+in which case you probably want to use the <code>f64</code> feature for better precision.
+The precision of the derived matrices won’t be perfect, but probably good enough for games.</p>
+<p>Conversions between all combinations of built-in primaries and whitepoints color spaces
+are bundled with kolor as constants with the <code>color-matrices</code> feature, which is enabled by default.
+When a <a href="struct.ColorConversion.html" title="struct kolor::ColorConversion">ColorConversion</a> without a bundled pre-calculated conversion matrix is created,
+it is calculated on-demand, meaning the creation will be a bit slower to create than
+if there is a constant matrix available.</p>
+<h4 id="chromatic-adaptation-transformation-cat"><a href="#chromatic-adaptation-transformation-cat">Chromatic Adaptation Transformation (CAT)</a></h4>
+<p>kolor implements CAT in <a href="details/cat/index.html" title="mod kolor::details::cat">details::cat</a> and supports the LMS cone spaces defined
+in <a href="details/cat/enum.LMSConeSpace.html" title="enum kolor::details::cat::LMSConeSpace">LMSConeSpace</a>. Chromatic Adaptation Transformation means converting
+a linear RGB color space from one reference <a href="details/color/enum.WhitePoint.html" title="enum kolor::details::color::WhitePoint">WhitePoint</a> to another.</p>
+<p>Use <a href="struct.ColorSpace.html#method.with_whitepoint" title="method kolor::ColorSpace::with_whitepoint">ColorSpace::with_whitepoint</a> to change <a href="details/color/enum.WhitePoint.html" title="enum kolor::details::color::WhitePoint">WhitePoint</a> for a color space.</p>
+<h4 id="xyz-rgb-conversions"><a href="#xyz-rgb-conversions">XYZ-RGB conversions</a></h4>
+<p>All supported RGB color spaces use the CIE XYZ color space as its reference color space.
+Functions in <a href="details/xyz/index.html" title="mod kolor::details::xyz">details::xyz</a> can be used to create conversion matrices to/from an RGB color space
+given a set of primaries and a white point.</p>
+<h2 id="no_std-and-glam-support"><a href="#no_std-and-glam-support">no_std and glam support</a></h2>
+<p>kolor is using by default <code>std</code> and <code>glam</code>, but both can be disabled separately or together with the
+folowing features:</p>
+<div><table><thead><tr><th></th><th><code>std</code></th><th><code>no_std</code></th></tr></thead><tbody>
+<tr><td><code>glam</code></td><td><code>std-glam</code></td><td><code>libm-glam</code></td></tr>
+<tr><td>no <code>glam</code></td><td><code>std</code></td><td><code>libm</code></td></tr>
+</tbody></table>
+</div></div></details><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="details/index.html" title="mod kolor::details">details</a></div></li><li><div class="item-name"><a class="mod" href="spaces/index.html" title="mod kolor::spaces">spaces</a></div></li></ul><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2><ul class="item-table"><li><div class="item-name"><a class="struct" href="struct.Color.html" title="struct kolor::Color">Color</a></div><div class="desc docblock-short"><a href="struct.Color.html" title="struct kolor::Color">Color</a> is a 3-component vector defined in a <a href="struct.ColorSpace.html" title="struct kolor::ColorSpace">ColorSpace</a>.</div></li><li><div class="item-name"><a class="struct" href="struct.ColorConversion.html" title="struct kolor::ColorConversion">ColorConversion</a></div><div class="desc docblock-short"><a href="struct.ColorConversion.html" title="struct kolor::ColorConversion">ColorConversion</a> defines an operation that maps a 3-component vector
+from a source <a href="struct.ColorSpace.html" title="struct kolor::ColorSpace">ColorSpace</a> to a destination <a href="struct.ColorSpace.html" title="struct kolor::ColorSpace">ColorSpace</a>.</div></li><li><div class="item-name"><a class="struct" href="struct.ColorSpace.html" title="struct kolor::ColorSpace">ColorSpace</a></div><div class="desc docblock-short">A color space defined in data by its <a href="details/color/enum.RGBPrimaries.html" title="enum kolor::details::color::RGBPrimaries">Primaries</a>, <a href="details/color/enum.WhitePoint.html" title="enum kolor::details::color::WhitePoint">white point</a>, and an optional <a href="details/color/enum.TransformFn.html" title="enum kolor::details::color::TransformFn">invertible transform function</a>.</div></li><li><div class="item-name"><a class="struct" href="struct.Mat3.html" title="struct kolor::Mat3">Mat3</a></div><div class="desc docblock-short">A 3x3 column major matrix.</div></li><li><div class="item-name"><a class="struct" href="struct.Vec3.html" title="struct kolor::Vec3">Vec3</a></div><div class="desc docblock-short">A 3-dimensional vector.</div></li></ul><h2 id="types" class="small-section-header"><a href="#types">Type Definitions</a></h2><ul class="item-table"><li><div class="item-name"><a class="type" href="type.FType.html" title="type kolor::FType">FType</a></div></li></ul></section></div></main></body></html>

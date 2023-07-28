@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["assert_eq_eps"],"mod":["basic_encodings","details"],"struct":["Color"],"trait":["ColorEncoding","ColorInto","PerceptualEncoding","WorkingEncoding"]};

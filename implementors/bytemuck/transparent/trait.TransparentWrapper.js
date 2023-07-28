@@ -1,0 +1,4 @@
+(function() {var implementors = {
+"bytemuck":[],
+"colstodian":[["impl&lt;E: <a class=\"trait\" href=\"colstodian/trait.ColorEncoding.html\" title=\"trait colstodian::ColorEncoding\">ColorEncoding</a>&gt; <a class=\"trait\" href=\"bytemuck/transparent/trait.TransparentWrapper.html\" title=\"trait bytemuck::transparent::TransparentWrapper\">TransparentWrapper</a>&lt;&lt;E as <a class=\"trait\" href=\"colstodian/trait.ColorEncoding.html\" title=\"trait colstodian::ColorEncoding\">ColorEncoding</a>&gt;::<a class=\"associatedtype\" href=\"colstodian/trait.ColorEncoding.html#associatedtype.Repr\" title=\"type colstodian::ColorEncoding::Repr\">Repr</a>&gt; for <a class=\"struct\" href=\"colstodian/struct.Color.html\" title=\"struct colstodian::Color\">Color</a>&lt;E&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

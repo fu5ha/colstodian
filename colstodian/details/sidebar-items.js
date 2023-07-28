@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["color","component_structs","encodings","linear_spaces","reprs","traits"]};

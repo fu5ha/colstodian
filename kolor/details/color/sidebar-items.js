@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["RGBPrimaries","TransformFn","WhitePoint"],"mod":["color_spaces"],"struct":["Color","ColorSpace"]};

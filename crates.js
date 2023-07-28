@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["bytemuck","cint","colstodian","glam","kolor","libm","num_traits","serde","serde_derive"];
