@@ -182,10 +182,11 @@ pub mod equals_eps {
     use super::*;
     use reprs::*;
     use traits::*;
-    
+
     #[cfg(feature = "libm")]
     use num_traits::float::Float;
 
+    /// Check whether `self` and `other` are equal within a margin of `eps`.
     pub trait EqualsEps<T> {
         fn eq_eps(self, other: Self, eps: T) -> bool;
     }
@@ -245,6 +246,7 @@ pub mod equals_eps {
         }
     }
 
+    /// Assert that `$left` and `$right` are equal within a margin of `$eps`.
     #[macro_export]
     macro_rules! assert_eq_eps {
         ($left:expr, $right:expr, $eps:expr) => {{
