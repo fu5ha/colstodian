@@ -486,14 +486,19 @@ impl AlphaOver for LinearSrgbAPremultiplied {
     }
 }
 
-/// Three-component "Quasi-Radiance" based on sRGB tristimulus primaries and white point.
+/// Three-component linearly-encoded "quasi-radiance" based on sRGB tristimulus primaries and white point.
 /// 
-/// If you are simulating the intensity of light along rays in a rendering system using
-/// "linear rgb" based 3-component vectors, then this is a more formal definition of that encoding.
+/// If you are simulating the "intensity" of light along rays in a rendering system using
+/// "linear rgb" based 3-component vectors, then this is a slightly more formal definition of that encoding.
 /// 
 /// See the docs of [`QuasiRadianceEncoding`] for more on what a quasi-radiance encoding is and how
 /// you can convert a color in this encoding into an 'actual color' encoding by doing an
 /// image/display rendering transform.
+/// 
+/// The canonical units here follow the sRGB standard - a value of `(1.0, 1.0, 1.0)` encodes a
+/// stand-in for the radiance emitted by (the differential projected area surrounding) a point on a surface
+/// in (the differential solid angle around) a direction towards an observer with relative spectral power distribution
+/// of the D65 illuminant and scaled power (radiant flux) such that 80 nit luminance is observed.
 pub struct SrgbQuasiRadiance;
 
 impl ColorEncoding for SrgbQuasiRadiance {

@@ -6,8 +6,11 @@ use crate::linear_spaces;
 use crate::reprs::*;
 use crate::traits::*;
 
-use super::LinearSrgb;
-
+/// Three-component linearly-encoded "quasi-radiance" based on sRGB tristimulus primaries and white point in 16-bit
+/// per component float.
+/// 
+/// See [`SrgbQuasiRadiance`][super::SrgbQuasiRadiance] for more information, this is the same as that but 16 bits
+/// per component rather than 32.
 pub struct SrgbQuasiRadianceF16;
 
 impl ColorEncoding for SrgbQuasiRadianceF16 {
@@ -31,5 +34,5 @@ impl ColorEncoding for SrgbQuasiRadianceF16 {
 
 impl WorkingEncoding for SrgbQuasiRadianceF16 {}
 impl QuasiRadianceEncoding for SrgbQuasiRadianceF16 {
-    type BaseEncoding = LinearSrgb;
+    type BaseLinearSpace = linear_spaces::Srgb;
 }

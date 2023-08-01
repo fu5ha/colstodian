@@ -169,6 +169,34 @@ where
 {
 }
 
+/// The complement of [`ConvertFrom`], which is blanket impl'd in the same way that [`Into`] is implemented
+/// as the converse of [`From`] by the standard library.
+pub trait ConvertTo<DstEnc>
+where
+    DstEnc: ColorEncoding,
+    Self: ColorEncoding,
+    DstEnc::LinearSpace: LinearConvertFromRaw<Self::LinearSpace>,
+{
+    /// If required or desired, perform a mapping of some kind to the input
+    /// before it undergoes its source transform. This may be desirable to perform some form of
+    /// gamut mapping if the src encoding has a larger size of representable colors than the dst encoding.
+    #[inline(always)]
+    fn map_src(_src: &mut Self::Repr) {}
+}
+
+impl<SrcEnc, DstEnc> ConvertTo<DstEnc> for SrcEnc
+where
+    DstEnc: ColorEncoding,
+    SrcEnc:ColorEncoding,
+    DstEnc::LinearSpace: LinearConvertFromRaw<SrcEnc::LinearSpace>,
+    DstEnc: ConvertFrom<SrcEnc>,
+{
+    #[inline(always)]
+    fn map_src(src: &mut SrcEnc::Repr) {
+        <DstEnc as ConvertFrom<SrcEnc>>::map_src(src)
+    }
+}
+
 /// Performs the raw conversion from the [`LinearColorSpace`] represented by `SrcSpc` to
 /// the [`LinearColorSpace`] represented by `Self`.
 pub trait LinearConvertFromRaw<SrcSpace: LinearColorSpace>: LinearColorSpace {
