@@ -10,6 +10,12 @@ use glam::Vec4Swizzles;
 use kolor::details::color::WhitePoint;
 use kolor::details::transform;
 
+#[cfg(feature = "half")]
+mod half_encodings;
+
+#[cfg(feature = "half")]
+pub use half_encodings::*;
+
 #[inline(always)]
 fn u8_to_f32(x: u8) -> f32 {
     x as f32 / 255.0
@@ -478,6 +484,39 @@ impl AlphaOver for LinearSrgbAPremultiplied {
     fn composite(over: Color<Self>, under: Color<Self>) -> Color<Self> {
         Color::from_repr(over.repr + under.repr * (1.0 - over.repr.w))
     }
+}
+
+/// Three-component "Quasi-Radiance" based on sRGB tristimulus primaries and white point.
+/// 
+/// If you are simulating the intensity of light along rays in a rendering system using
+/// "linear rgb" based 3-component vectors, then this is a more formal definition of that encoding.
+/// 
+/// See the docs of [`QuasiRadianceEncoding`] for more on what a quasi-radiance encoding is and how
+/// you can convert a color in this encoding into an 'actual color' encoding by doing an
+/// image/display rendering transform.
+pub struct SrgbQuasiRadiance;
+
+impl ColorEncoding for SrgbQuasiRadiance {
+    type Repr = F32Repr;
+
+    type ComponentStruct = Rgb<f32>;
+
+    type LinearSpace = linear_spaces::Srgb;
+
+    const NAME: &'static str = "SrgbQuasiRadiance";
+
+    fn src_transform_raw(repr: Self::Repr) -> (glam::Vec3, f32) {
+        (repr, 1.0)
+    }
+
+    fn dst_transform_raw(raw: glam::Vec3, _: f32) -> Self::Repr {
+        raw
+    }
+}
+
+impl WorkingEncoding for SrgbQuasiRadiance {}
+impl QuasiRadianceEncoding for SrgbQuasiRadiance {
+    type BaseLinearSpace = linear_spaces::Srgb;
 }
 
 /// A 32-bit-per-component version of the Oklab perceptually-uniform color space.

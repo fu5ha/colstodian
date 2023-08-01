@@ -227,6 +227,37 @@ where
     }
 }
 
+impl<RadE> Color<RadE>
+where
+    RadE: ColorEncoding + WorkingEncoding + QuasiRadianceEncoding,
+    RadE::Repr: Mul<Output = RadE::Repr>,
+{
+    /// "Convolve" `self` with the quasi-reflectance represented by `reflectance`. Effectively, just multiply `self`
+    /// by `reflectance` component-wise.
+    /// 
+    /// This is an *approximation* of what would happen when incoming light `self` encounters a material with the reflectance `reflectance`.
+    /// If this were a true spectral simulation, we would be convolving two functions, the first being `self` which would be the light's radiance
+    /// Spectral Power Distribution function (SPD), and the second being the material's `reflectance` represented as its Spectral Reflectivity Curve,
+    /// which is very similar to a SPD curve but with bounded range of 0.0 to 1.0 (0 to 100%).
+    /// 
+    /// Approximating this operation with a component-wise multiplication of tristimulus quasi-radiance and quasi-reflectance is a decent approximation
+    /// in many cases, but it *does* introduce error, with repeated application of convolution pulling the ratio between components towards becoming just
+    /// (a coefficient times) a fully-saturated primary. The less the 'actual' power distribution and/or reflectance curve can be accurately represented
+    /// as tristimulus-based information, the greater the error introduced.
+    /// 
+    /// One may also observe that repeated applications of the this approximate convolution operation is relatively common in some rendering techniques,
+    /// such as in multi-bounce path tracing simulations. This is one of the mechanisms by which the "notorious six" (i.e. colors which are represented by
+    /// either a pure single primary or the pure absence of a single primary, so, red, green, blue, cyan, yellow, and magenta) crop up in problem areas
+    /// in renders.
+    pub fn convolve<ReflE>(self, reflectance: Color<ReflE>) -> Self
+    where
+        ReflE: ColorEncoding<Repr = RadE::Repr> + WorkingEncoding + QuasiRadianceEncoding,
+    {
+        self * reflectance.repr
+    }
+}
+
+
 impl<T, E> AsRef<T> for Color<E>
 where
     E: ColorEncoding,

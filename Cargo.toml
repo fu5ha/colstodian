@@ -22,17 +22,21 @@ glam = { version = "0.23", default-features = false } # keep in sync with kolor
 kolor = { version = "0.1.9", default-features = false, features = ["glam", "f32", "color-matrices"] }
 num-traits = { version = "0.2", optional = true, default-features = false }
 serde = { version = "1", optional = true, features = ["derive"] }
+half = { version = "2", optional = true, default-features = false }
 
 [features]
 default = ["std", "bytemuck"]
 
+# enable support for half precision float formats
+half = ["dep:half"]
+
 # enable support for the standard library
-std = ["kolor/std", "glam/std"]
+std = ["kolor/std", "glam/std", "half/std"]
 
 # libm is required when building with no_std
-libm = ["kolor/libm", "glam/libm", "num-traits", "num-traits/libm"]
+libm = ["kolor/libm", "glam/libm", "num-traits", "num-traits/libm", "half/num-traits"]
 
 # add serde Serialize/Deserialize to relevant types
-serde = ["dep:serde", "kolor/serde1", "glam/serde"]
+serde = ["dep:serde", "kolor/serde1", "glam/serde", "half/serde"]
 
-bytemuck = ["dep:bytemuck", "glam/bytemuck"]
+bytemuck = ["dep:bytemuck", "glam/bytemuck", "half/bytemuck"]

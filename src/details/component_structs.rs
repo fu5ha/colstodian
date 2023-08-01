@@ -59,6 +59,19 @@ unsafe impl ComponentStructFor<F32Repr> for Rgb<f32> {
     }
 }
 
+#[cfg(feature = "half")]
+unsafe impl ComponentStructFor<F16Repr> for Rgb<half::f16> {
+    fn cast(repr: &F16Repr) -> &Self {
+        // SAFETY: [f16; 3] is guaranteed to have the same layout as Self
+        unsafe { &*(repr as *const F16Repr as *const Self) }
+    }
+
+    fn cast_mut(repr: &mut F16Repr) -> &mut Self {
+        // SAFETY: [f16; 3] is guaranteed to have the same layout as Self
+        unsafe { &mut *(repr as *mut F16Repr as *mut Self) }
+    }
+}
+
 #[cfg(not(target_arch = "spirv"))]
 impl<T: fmt::Display> fmt::Display for Rgb<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

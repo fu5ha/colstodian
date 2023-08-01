@@ -27,3 +27,9 @@ pub type F32ARepr = glam::Vec4;
 impl ColorRepr for F32ARepr {
     type Element = f32;
 }
+
+#[cfg(feature = "half")]
+mod half_reprs;
+
+#[cfg(feature = "half")]
+pub use self::half_reprs::*;

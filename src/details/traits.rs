@@ -106,6 +106,29 @@ pub trait PerceptualEncoding: ColorEncoding + WorkingEncoding {}
 /// operations on the contained color values directly.
 pub trait WorkingEncoding: ColorEncoding {}
 
+/// Implemented by "color" encodings which actually represent a 'quasi radiance' value, i.e. the intensity of light
+/// along a given ray (or radiometric flux of the light per unit solid angle, to be pedantic).
+/// 
+/// If you're confused what I mean by this, I suggest reading this blog post: https://fusha.moe/blog/posts/whirlwind-games-color/
+/// 
+/// Calling values like this a "color" is a bit of a stretch of the definition, but it's a common enough thing in
+/// computer graphics to want to work with values like this and turn them into *actual* colors, so it deserves to
+/// be incorporated in this library somehow.
+/// 
+/// Color encodings that implement this trait cannot be directly converted to or from most other encodings. Instead you can use
+/// the [`Color::render_image`] which allows you to choose an "image formation"/"display rendering transform" strategy to use
+/// during the conversion to a compatible "true color" space.
+pub trait QuasiRadianceEncoding: ColorEncoding + WorkingEncoding {
+    type BaseLinearSpace: LinearColorSpace;
+}
+
+/// Implemented by "color" encodings which actually represent a 'quasi reflectance' value, i.e. each component represents the
+/// *percentage* of incoming [quasi-radiant flux][QuasiRadianceEncoding] in the same channel that gets reflected (not absorbed)
+/// by a given material in a rendering context.
+pub trait QuasiReflectanceEncoding: ColorEncoding {
+    type BaseLinearSpace: LinearColorSpace;
+}
+
 /// A type that implements [`LinearColorSpace`] represents a color space which can be defined by a *linear transformation only*
 /// (i.e. a 3x3 matrix multiplication) from the CIE XYZ color space.
 ///
